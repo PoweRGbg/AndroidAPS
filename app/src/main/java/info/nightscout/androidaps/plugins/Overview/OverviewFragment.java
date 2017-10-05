@@ -105,8 +105,6 @@ import info.nightscout.androidaps.plugins.Loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.Loop.events.EventNewOpenLoopNotification;
 import info.nightscout.androidaps.plugins.NSClientInternal.broadcasts.BroadcastAckAlarm;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSDeviceStatus;
-import info.nightscout.androidaps.plugins.OpenAPSAMA.DetermineBasalResultAMA;
-import info.nightscout.androidaps.plugins.OpenAPSAMA.OpenAPSAMAPlugin;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.CalibrationDialog;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.NewTreatmentDialog;
 import info.nightscout.androidaps.plugins.Overview.Dialogs.WizardDialog;
@@ -713,7 +711,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                                             builder.setMessage(result.comment);
                                             builder.setPositiveButton(MainApp.sResources.getString(R.string.ok), null);
                                             builder.show();
-                                        } catch (WindowManager.BadTokenException | NullPointerException e) {
+                                        } catch (WindowManager.BadTokenException e) {
                                             // window has been destroyed
                                             Notification notification = new Notification(Notification.BOLUS_DELIVERY_ERROR, MainApp.sResources.getString(R.string.treatmentdeliveryerror), Notification.URGENT);
                                             MainApp.bus().post(new EventNewNotification(notification));
@@ -1203,8 +1201,8 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             cobView.setText(cobText);
         }
 
-        boolean showPrediction = showPredictionView.isChecked() && finalLastRun != null && finalLastRun.constraintsProcessed.getClass().equals(DetermineBasalResultAMA.class);
-        if (MainApp.getSpecificPlugin(OpenAPSAMAPlugin.class) != null && MainApp.getSpecificPlugin(OpenAPSAMAPlugin.class).isEnabled(PluginBase.APS)) {
+        boolean showPrediction = showPredictionView.isChecked() && finalLastRun != null && finalLastRun.request.hasPredictions;
+        if (showPrediction) {
             showPredictionView.setVisibility(View.VISIBLE);
             getActivity().findViewById(R.id.overview_showprediction_label).setVisibility(View.VISIBLE);
         } else {
@@ -1261,7 +1259,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         long fromTime;
         long endTime;
         if (showPrediction) {
-            int predHours = (int) (Math.ceil(((DetermineBasalResultAMA) finalLastRun.constraintsProcessed).getLatestPredictionsTime() - System.currentTimeMillis()) / (60 * 60 * 1000));
+            int predHours = (int) (Math.ceil(finalLastRun.constraintsProcessed.getLatestPredictionsTime() - System.currentTimeMillis()) / (60 * 60 * 1000));
             predHours = Math.min(2, predHours);
             predHours = Math.max(0, predHours);
             hoursToFetch = rangeToDisplay - predHours;
@@ -1587,8 +1585,7 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
             bgListArray.add(bg);
         }
         if (showPrediction) {
-            DetermineBasalResultAMA amaResult = (DetermineBasalResultAMA) finalLastRun.constraintsProcessed;
-            List<BgReading> predArray = amaResult.getPredictions();
+            List<BgReading> predArray = finalLastRun.constraintsProcessed.getPredictions();
             bgListArray.addAll(predArray);
         }
 
@@ -1613,7 +1610,10 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
         for (int tx = 0; tx < treatments.size(); tx++) {
             Treatment t = treatments.get(tx);
             if (t.getX() < fromTime || t.getX() > endTime) continue;
-            t.setY(getNearestBg((long) t.getX(), bgReadingsArray));
+            if (t.isSMB)
+                t.setY(lowLine);
+            else
+                t.setY(getNearestBg((long) t.getX(), bgReadingsArray));
             filteredTreatments.add(t);
         }
 

@@ -10,11 +10,11 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
-import android.text.TextUtils;
 
 import info.nightscout.androidaps.events.EventPreferenceChange;
 import info.nightscout.androidaps.events.EventRefreshGui;
 import info.nightscout.androidaps.interfaces.PluginBase;
+import info.nightscout.androidaps.plugins.OpenAPSSMB.OpenAPSSMBPlugin;
 import info.nightscout.androidaps.plugins.Insulin.InsulinOrefFreePeakPlugin;
 import info.nightscout.androidaps.plugins.PumpDanaR.BluetoothDevicePreference;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPlugin;
@@ -74,10 +74,7 @@ public class PreferencesActivity extends PreferenceActivity implements SharedPre
                 ((EditTextPreference) pref).setDialogMessage(editTextPref.getDialogMessage());
                 pref.setSummary(editTextPref.getText());
             }
-            else if(pref.getKey().contains("smscommunicator_allowednumbers") && TextUtils.isEmpty(editTextPref.getText().toString().trim())){
-                pref.setSummary(MainApp.sResources.getString(R.string.smscommunicator_allowednumbers_summary));
-            }
-           }
+        }
         if (pref instanceof MultiSelectListPreference) {
             EditTextPreference editTextPref = (EditTextPreference) pref;
             pref.setSummary(editTextPref.getText());
@@ -116,6 +113,8 @@ public class PreferencesActivity extends PreferenceActivity implements SharedPre
             if (Config.OPENAPSENABLED) {
                 addPreferencesFromResource(R.xml.pref_openapsma);
                 if (MainApp.getSpecificPlugin(OpenAPSAMAPlugin.class) != null && MainApp.getSpecificPlugin(OpenAPSAMAPlugin.class).isEnabled(PluginBase.APS))
+                    addPreferencesFromResource(R.xml.pref_openapsama);
+                if (MainApp.getSpecificPlugin(OpenAPSSMBPlugin.class) != null && MainApp.getSpecificPlugin(OpenAPSSMBPlugin.class).isEnabled(PluginBase.APS))
                     addPreferencesFromResource(R.xml.pref_openapsama);
             }
             if (MainApp.getSpecificPlugin(SensitivityAAPSPlugin.class) != null && MainApp.getSpecificPlugin(SensitivityAAPSPlugin.class).isEnabled(PluginBase.SENSITIVITY)
