@@ -192,6 +192,8 @@ public class TreatmentsPlugin implements PluginBase, TreatmentsInterface {
                 Iob bIOB = t.iobCalc(snoozeTime, dia);
                 total.bolussnooze += bIOB.iobContrib;
             } else {
+                if (t.date > total.lastBolusTime)
+                    total.lastBolusTime = t.date;
                 total.basaliob += t.insulin;
                 total.microBolusIOB += tIOB.iobContrib;
             }
@@ -233,6 +235,7 @@ public class TreatmentsPlugin implements PluginBase, TreatmentsInterface {
             if (t > dia_ago && t <= now) {
                 if (treatment.carbs >= 1) {
                     result.carbs += treatment.carbs;
+                    result.lastCarbTime = t;
                 }
                 if (treatment.insulin > 0 && treatment.mealBolus) {
                     result.boluses += treatment.insulin;
@@ -243,7 +246,11 @@ public class TreatmentsPlugin implements PluginBase, TreatmentsInterface {
         AutosensData autosensData = IobCobCalculatorPlugin.getLastAutosensData();
         if (autosensData != null) {
             result.mealCOB = autosensData.cob;
+            result.minDeviationSlope = autosensData.minDeviationSlope;
+            result.slopeFromMinDeviation = autosensData.minDeviationSlope;
+            result.slopeFromMaxDeviation = autosensData.maxDeviationSlope;
         }
+        result.lastBolusTime = getLastSMBTime();
         return result;
     }
 
@@ -263,6 +270,19 @@ public class TreatmentsPlugin implements PluginBase, TreatmentsInterface {
                 in5minback.add(t);
         }
         return in5minback;
+    }
+
+    @Override
+    public long getLastSMBTime() {
+        long last = 0;
+        for (Integer pos = 0; pos < treatments.size(); pos++) {
+            Treatment t = treatments.get(pos);
+            if (!t.isValid)
+                continue;
+            if (t.isSMB && t.date > last)
+                last = t.date;
+        }
+        return last;
     }
 
     @Override

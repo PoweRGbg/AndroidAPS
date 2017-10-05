@@ -227,7 +227,7 @@ public class IobCobCalculatorPlugin implements PluginBase {
     private BgReading findOlder(long time) {
         BgReading lastFound = bgReadings.get(bgReadings.size() - 1);
         if (lastFound.date > time) return null;
-        for (int i = bgReadings.size() - 2; i >=0 ; --i) {
+        for (int i = bgReadings.size() - 2; i >= 0; --i) {
             if (bgReadings.get(i).date < time) continue;
             lastFound = bgReadings.get(i);
             if (bgReadings.get(i).date > time) break;
@@ -246,7 +246,7 @@ public class IobCobCalculatorPlugin implements PluginBase {
             long currentTime = bgReadings.get(0).date + 5 * 60 * 1000 - bgReadings.get(0).date % (5 * 60 * 1000) - 5 * 60 * 1000L;
             //log.debug("First reading: " + new Date(currentTime).toLocaleString());
 
-             while (true) {
+            while (true) {
                 // test if current value is older than current time
                 BgReading newer = findNewer(currentTime);
                 BgReading older = findOlder(currentTime);
@@ -353,6 +353,7 @@ public class IobCobCalculatorPlugin implements PluginBase {
             long prevDataTime = roundUpTime(bucketed_data.get(bucketed_data.size() - 3).date);
             log.debug("Prev data time: " + new Date(prevDataTime).toLocaleString());
             AutosensData previous = autosensDataTable.get(prevDataTime);
+
             // start from oldest to be able sub cob
             for (int i = bucketed_data.size() - 4; i >= 0; i--) {
                 // check if data already exists
@@ -376,20 +377,48 @@ public class IobCobCalculatorPlugin implements PluginBase {
                     autosensData.activeCarbsList = new ArrayList<>();
 
                 //console.error(bgTime , bucketed_data[i].glucose);
-                double bg;
-                double avgDelta;
-                double delta;
-                bg = bucketed_data.get(i).value;
+
+                double bg = bucketed_data.get(i).value;
                 if (bg < 39 || bucketed_data.get(i + 3).value < 39) {
                     log.error("! value < 39");
                     continue;
                 }
-                delta = (bg - bucketed_data.get(i + 1).value);
+                double avgDelta = (bg - bucketed_data.get(i + 3).value) / 3;
+                double delta = (bg - bucketed_data.get(i + 1).value);
 
                 IobTotal iob = calculateFromTreatmentsAndTemps(bgTime);
 
                 double bgi = -iob.activity * sens * 5;
                 double deviation = delta - bgi;
+                double avgDeviation = Math.round((avgDelta - bgi) * 1000) / 1000;
+
+                double currentDeviation;
+                double minDeviationSlope = 0;
+                double maxDeviationSlope = 0;
+                double maxDeviation = 0;
+                double minDeviation = 0;
+
+                // https://github.com/openaps/oref0/blob/master/lib/determine-basal/cob-autosens.js#L169
+                if (i < bucketed_data.size() - 16) { // we need 1h of data to calculate minDeviationSlope
+                    long hourago = bgTime + 10 * 1000 - 60 * 60 * 1000L;
+                    AutosensData hourAgoData = getAutosensData(hourago);
+                    currentDeviation = hourAgoData.avgDeviation;
+                    int initialIndex = autosensDataTable.indexOfKey(hourAgoData.time);
+
+                    for (int past = 1; past < 12; past++) {
+                        AutosensData ad = autosensDataTable.valueAt(initialIndex + past);
+                        double deviationSlope = (ad.avgDeviation - currentDeviation) / (ad.time - bgTime) * 1000 * 60 * 5;
+                        if (ad.avgDeviation > maxDeviation) {
+                            maxDeviationSlope = Math.min(0, deviationSlope);
+                            maxDeviation = ad.avgDeviation;
+                        }
+                        if (ad.avgDeviation < minDeviation) {
+                            minDeviationSlope = Math.max(0, deviationSlope);
+                            minDeviation = ad.avgDeviation;
+                        }
+                        //log.debug("Deviations: " + new Date(bgTime) + new Date(ad.time) + " avgDeviation=" + avgDeviation + " deviationSlope=" + deviationSlope + " minDeviationSlope=" + minDeviationSlope);
+                    }
+                }
 
                 List<Treatment> recentTreatments = MainApp.getConfigBuilder().getTreatments5MinBackFromHistory(bgTime);
                 for (int ir = 0; ir < recentTreatments.size(); ir++) {
@@ -420,6 +449,10 @@ public class IobCobCalculatorPlugin implements PluginBase {
                 autosensData.deviation = deviation;
                 autosensData.bgi = bgi;
                 autosensData.delta = delta;
+                autosensData.avgDelta = avgDelta;
+                autosensData.avgDeviation = avgDeviation;
+                autosensData.minDeviationSlope = minDeviationSlope;
+                autosensData.maxDeviationSlope = maxDeviationSlope;
 
                 // calculate autosens only without COB
                 if (autosensData.cob <= 0) {
@@ -442,8 +475,8 @@ public class IobCobCalculatorPlugin implements PluginBase {
                 previous = autosensData;
                 autosensDataTable.put(bgTime, autosensData);
                 autosensData.autosensRatio = detectSensitivity(oldestTimeWithData, bgTime).ratio;
-                if (Config.logAutosensData)
-                    log.debug(autosensData.log(bgTime));
+                //if (Config.logAutosensData)
+                    //log.debug(autosensData.log(bgTime));
             }
         }
         MainApp.bus().post(new EventAutosensCalculationFinished());
@@ -669,8 +702,8 @@ public class IobCobCalculatorPlugin implements PluginBase {
             for (int index = iobTable.size() - 1; index >= 0; index--) {
                 if (iobTable.keyAt(index) > time) {
                     if (Config.logAutosensData)
-                    if (Config.logAutosensData)
-                        log.debug("Removing from iobTable: " + new Date(iobTable.keyAt(index)).toLocaleString());
+                        if (Config.logAutosensData)
+                            log.debug("Removing from iobTable: " + new Date(iobTable.keyAt(index)).toLocaleString());
                     iobTable.removeAt(index);
                 } else {
                     break;

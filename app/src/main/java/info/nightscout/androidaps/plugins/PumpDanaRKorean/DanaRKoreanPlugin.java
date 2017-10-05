@@ -503,8 +503,7 @@ public class DanaRKoreanPlugin implements PluginBase, PumpInterface, DanaRInterf
         }
         if (percent > getPumpDescription().maxTempPercent)
             percent = getPumpDescription().maxTempPercent;
-        TemporaryBasal runningTB =  MainApp.getConfigBuilder().getTempBasalFromHistory(System.currentTimeMillis());
-        if (runningTB != null && runningTB.percentRate == percent) {
+        if (pump.isTempBasalInProgress && pump.tempBasalPercent == percent) {
             result.enacted = false;
             result.success = true;
             result.isTempCancel = false;
@@ -548,8 +547,7 @@ public class DanaRKoreanPlugin implements PluginBase, PumpInterface, DanaRInterf
         insulin = Round.roundTo(insulin, getPumpDescription().extendedBolusStep * (1 + durationInHalfHours % 1));
 
         PumpEnactResult result = new PumpEnactResult();
-        ExtendedBolus runningEB = MainApp.getConfigBuilder().getExtendedBolusFromHistory(System.currentTimeMillis());
-        if (runningEB != null && Math.abs(runningEB.insulin - insulin) < getPumpDescription().extendedBolusStep) {
+        if (pump.isExtendedInProgress && Math.abs(pump.extendedBolusAmount - insulin) < getPumpDescription().extendedBolusStep) {
             result.enacted = false;
             result.success = true;
             result.comment = MainApp.instance().getString(R.string.virtualpump_resultok);
@@ -600,8 +598,7 @@ public class DanaRKoreanPlugin implements PluginBase, PumpInterface, DanaRInterf
 
     public PumpEnactResult cancelRealTempBasal() {
         PumpEnactResult result = new PumpEnactResult();
-        TemporaryBasal runningTB =  MainApp.getConfigBuilder().getTempBasalFromHistory(System.currentTimeMillis());
-        if (runningTB != null) {
+        if (pump.isTempBasalInProgress) {
             sExecutionService.tempBasalStop();
             result.enacted = true;
             result.isTempCancel = true;
@@ -625,8 +622,7 @@ public class DanaRKoreanPlugin implements PluginBase, PumpInterface, DanaRInterf
     @Override
     public PumpEnactResult cancelExtendedBolus() {
         PumpEnactResult result = new PumpEnactResult();
-        ExtendedBolus runningEB = MainApp.getConfigBuilder().getExtendedBolusFromHistory(System.currentTimeMillis());
-        if (runningEB != null) {
+        if (pump.isExtendedInProgress) {
             sExecutionService.extendedBolusStop();
             result.enacted = true;
             result.isTempCancel = true;

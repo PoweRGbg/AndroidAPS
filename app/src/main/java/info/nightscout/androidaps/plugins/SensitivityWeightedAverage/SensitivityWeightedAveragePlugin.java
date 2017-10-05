@@ -183,7 +183,7 @@ public class SensitivityWeightedAveragePlugin implements PluginBase, Sensitivity
         String ratioLimit = "";
         String sensResult = "";
 
-        log.debug("Records: " + index + "   " + pastSensitivity);
+        //log.debug("Records: " + index + "   " + pastSensitivity);
 
         double average = weightedsum / weights;
         double basalOff = average * (60 / 5) / Profile.toMgdl(sens, profile.getUnits());
@@ -197,7 +197,7 @@ public class SensitivityWeightedAveragePlugin implements PluginBase, Sensitivity
             sensResult = "Sensitivity normal";
         }
 
-        log.debug(sensResult);
+        //log.debug(sensResult);
 
         double rawRatio = ratio;
         ratio = Math.max(ratio, SafeParse.stringToDouble(SP.getString("openapsama_autosens_min", "0.7")));
@@ -205,10 +205,10 @@ public class SensitivityWeightedAveragePlugin implements PluginBase, Sensitivity
 
         if (ratio != rawRatio) {
             ratioLimit = "Ratio limited from " + rawRatio + " to " + ratio;
-            log.debug(ratioLimit);
+            //log.debug(ratioLimit);
         }
 
-        log.debug("Sensitivity to: " + new Date(toTime).toLocaleString() + " weightedaverage: " + average + " ratio: " + ratio);
+        //log.debug("Sensitivity to: " + new Date(toTime).toLocaleString() + " weightedaverage: " + average + " ratio: " + ratio);
 
         AutosensResult output = new AutosensResult();
         output.ratio = Round.roundTo(ratio, 0.01);
