@@ -3,9 +3,8 @@ package info.nightscout.androidaps.plugins.Overview.Dialogs;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.text.Editable;
@@ -26,7 +25,6 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.crashlytics.android.answers.Answers;
 import com.crashlytics.android.answers.CustomEvent;
 import com.squareup.otto.Subscribe;
 
@@ -46,25 +44,27 @@ import info.nightscout.androidaps.data.DetailedBolusInfo;
 import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileStore;
-import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.db.DatabaseHelper;
 import info.nightscout.androidaps.db.Source;
 import info.nightscout.androidaps.db.TempTarget;
+import info.nightscout.androidaps.events.EventFeatureRunning;
 import info.nightscout.androidaps.events.EventNewBG;
 import info.nightscout.androidaps.events.EventRefreshOverview;
+import info.nightscout.androidaps.interfaces.Constraint;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.IobCobCalculator.AutosensData;
+import info.nightscout.androidaps.plugins.IobCobCalculator.IobCobCalculatorPlugin;
+import info.nightscout.androidaps.plugins.IobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.Loop.LoopPlugin;
-import info.nightscout.androidaps.plugins.OpenAPSAMA.OpenAPSAMAPlugin;
-import info.nightscout.androidaps.plugins.OpenAPSMA.events.EventOpenAPSUpdateGui;
-import info.nightscout.androidaps.plugins.Overview.Notification;
-import info.nightscout.androidaps.plugins.Overview.events.EventNewNotification;
+import info.nightscout.androidaps.plugins.Treatments.TreatmentsPlugin;
+import info.nightscout.androidaps.queue.Callback;
 import info.nightscout.utils.BolusWizard;
 import info.nightscout.utils.DateUtil;
 import info.nightscout.utils.DecimalFormatter;
+import info.nightscout.utils.FabricPrivacy;
 import info.nightscout.utils.NumberPicker;
-import info.nightscout.utils.OKDialog;
 import info.nightscout.utils.SP;
 import info.nightscout.utils.SafeParse;
 import info.nightscout.utils.ToastUtils;
@@ -106,18 +106,15 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
     Integer calculatedCarbs = 0;
     Double calculatedTotalInsulin = 0d;
     JSONObject boluscalcJSON;
-    boolean cobAvailable = false;
-
-    Handler mHandler;
-    public static HandlerThread mHandlerThread;
 
     Context context;
 
+    //one shot guards
+    private boolean accepted;
+    private boolean okClicked;
+
     public WizardDialog() {
         super();
-        mHandlerThread = new HandlerThread(WizardDialog.class.getSimpleName());
-        mHandlerThread.start();
-        mHandler = new Handler(mHandlerThread.getLooper());
     }
 
     @Override
@@ -136,6 +133,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
     public void onResume() {
         super.onResume();
         MainApp.bus().register(this);
+        MainApp.bus().post(new EventFeatureRunning(EventFeatureRunning.Feature.WIZARD));
     }
 
     @Override
@@ -145,26 +143,19 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
     }
 
     @Subscribe
-    public void onStatusEvent(final EventOpenAPSUpdateGui e) {
+    public void onStatusEvent(final EventNewBG e) {
         Activity activity = getActivity();
         if (activity != null)
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (ConfigBuilderPlugin.getActiveAPS() instanceof OpenAPSAMAPlugin && ConfigBuilderPlugin.getActiveAPS().getLastAPSResult() != null && ConfigBuilderPlugin.getActiveAPS().getLastAPSRun().after(new Date(System.currentTimeMillis() - 11 * 60 * 1000L))) {
-                        cobLayout.setVisibility(View.VISIBLE);
-                        cobAvailable = true;
-                    } else {
-                        cobLayout.setVisibility(View.GONE);
-                        cobAvailable = false;
-                    }
                     calculateInsulin();
                 }
             });
     }
 
     @Subscribe
-    public void onStatusEvent(final EventNewBG e) {
+    public void onStatusEvent(final EventAutosensCalculationFinished e) {
         Activity activity = getActivity();
         if (activity != null)
             activity.runOnUiThread(new Runnable() {
@@ -247,40 +238,36 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
 
         superbolusCheckbox.setVisibility(SP.getBoolean(R.string.key_usesuperbolus, false) ? View.VISIBLE : View.GONE);
 
-        Integer maxCarbs = MainApp.getConfigBuilder().applyCarbsConstraints(Constants.carbsOnlyForCheckLimit);
-        Double maxCorrection = MainApp.getConfigBuilder().applyBolusConstraints(Constants.bolusOnlyForCheckLimit);
+        Integer maxCarbs = MainApp.getConstraintChecker().getMaxCarbsAllowed().value();
+        Double maxCorrection = MainApp.getConstraintChecker().getMaxBolusAllowed().value();
 
         editBg.setParams(0d, 0d, 500d, 0.1d, new DecimalFormat("0.0"), false, textWatcher);
         editCarbs.setParams(0d, 0d, (double) maxCarbs, 1d, new DecimalFormat("0"), false, textWatcher);
-        double bolusstep = MainApp.getConfigBuilder().getPumpDescription().bolusStep;
-        editCorr.setParams(0d, -maxCorrection, maxCorrection, bolusstep, new DecimalFormat("0.00"), false, textWatcher);
+        double bolusstep = ConfigBuilderPlugin.getActivePump().getPumpDescription().bolusStep;
+        editCorr.setParams(0d, -maxCorrection, maxCorrection, bolusstep, DecimalFormatter.pumpSupportedBolusFormat(), false, textWatcher);
         editCarbTime.setParams(0d, -60d, 60d, 5d, new DecimalFormat("0"), false);
         initDialog();
 
+        setCancelable(true);
+        getDialog().setCanceledOnTouchOutside(false);
         return view;
     }
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         saveCheckedStates();
-        ttCheckbox.setEnabled(bgCheckbox.isChecked() && MainApp.getConfigBuilder().getTempTargetFromHistory() != null);
+        ttCheckbox.setEnabled(bgCheckbox.isChecked() && TreatmentsPlugin.getPlugin().getTempTargetFromHistory() != null);
         calculateInsulin();
     }
 
     private void saveCheckedStates() {
-        //SP.putBoolean(getString(R.string.key_wizard_include_bg), bgCheckbox.isChecked());
         SP.putBoolean(getString(R.string.key_wizard_include_cob), cobCheckbox.isChecked());
         SP.putBoolean(getString(R.string.key_wizard_include_trend_bg), bgtrendCheckbox.isChecked());
-        //SP.putBoolean(getString(R.string.key_wizard_include_bolus_iob), bolusIobCheckbox.isChecked());
-        //SP.putBoolean(getString(R.string.key_wizard_include_basal_iob), basalIobCheckbox.isChecked());
     }
 
     private void loadCheckedStates() {
-        //bgCheckbox.setChecked(SP.getBoolean(getString(R.string.key_wizard_include_bg), true));
         bgtrendCheckbox.setChecked(SP.getBoolean(getString(R.string.key_wizard_include_trend_bg), false));
         cobCheckbox.setChecked(SP.getBoolean(getString(R.string.key_wizard_include_cob), false));
-        //bolusIobCheckbox.setChecked(SP.getBoolean(getString(R.string.key_wizard_include_bolus_iob), true));
-        //basalIobCheckbox.setChecked(SP.getBoolean(getString(R.string.key_wizard_include_basal_iob), true));
     }
 
     @Override
@@ -296,16 +283,24 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
     }
 
     @Override
-    public void onClick(View view) {
+    public synchronized void onClick(View view) {
         switch (view.getId()) {
             case R.id.ok:
-                if (calculatedTotalInsulin > 0d || calculatedCarbs > 0d) {
+                if (okClicked) {
+                    log.debug("guarding: ok already clicked");
+                    dismiss();
+                    return;
+                }
+                okClicked = true;
+                final Profile profile = MainApp.getConfigBuilder().getProfile();
+
+                if (profile != null && (calculatedTotalInsulin > 0d || calculatedCarbs > 0d)) {
                     DecimalFormat formatNumber2decimalplaces = new DecimalFormat("0.00");
 
                     String confirmMessage = getString(R.string.entertreatmentquestion);
 
-                    Double insulinAfterConstraints = MainApp.getConfigBuilder().applyBolusConstraints(calculatedTotalInsulin);
-                    Integer carbsAfterConstraints = MainApp.getConfigBuilder().applyCarbsConstraints(calculatedCarbs);
+                    Double insulinAfterConstraints = MainApp.getConstraintChecker().applyBolusConstraints(new Constraint<>(calculatedTotalInsulin)).value();
+                    Integer carbsAfterConstraints = MainApp.getConstraintChecker().applyCarbsConstraints(new Constraint<>(calculatedCarbs)).value();
 
                     confirmMessage += "<br/>" + getString(R.string.bolus) + ": " + "<font color='" + MainApp.sResources.getColor(R.color.bolus) + "'>" + formatNumber2decimalplaces.format(insulinAfterConstraints) + "U" + "</font>";
                     confirmMessage += "<br/>" + getString(R.string.carbs) + ": " + carbsAfterConstraints + "g";
@@ -326,56 +321,67 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
                     final int carbTime = SafeParse.stringToInt(editCarbTime.getText());
                     final boolean useSuperBolus = superbolusCheckbox.isChecked();
 
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(context);
                     builder.setTitle(MainApp.sResources.getString(R.string.confirmation));
                     builder.setMessage(Html.fromHtml(confirmMessage));
                     builder.setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            if (finalInsulinAfterConstraints > 0 || finalCarbsAfterConstraints > 0) {
-                                final ConfigBuilderPlugin pump = MainApp.getConfigBuilder();
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        PumpEnactResult result;
-                                        if (useSuperBolus) {
-                                            final LoopPlugin activeloop = MainApp.getConfigBuilder().getActiveLoop();
-                                            if (activeloop != null) {
-                                                activeloop.superBolusTo(System.currentTimeMillis() + 2 * 60L * 60 * 1000);
-                                                MainApp.bus().post(new EventRefreshOverview("WizardDialog"));
-                                            }
-                                            pump.cancelTempBasal(true);
-                                            result = pump.setTempBasalAbsolute(0d, 120);
-                                            if (!result.success) {
-                                                OKDialog.show(getActivity(), MainApp.sResources.getString(R.string.tempbasaldeliveryerror), result.comment, null);
-                                            }
+                            synchronized (builder) {
+                                if (accepted) {
+                                    log.debug("guarding: already accepted");
+                                    return;
+                                }
+                                accepted = true;
+                                if (finalInsulinAfterConstraints > 0 || finalCarbsAfterConstraints > 0) {
+                                    if (useSuperBolus) {
+                                        final LoopPlugin activeloop = ConfigBuilderPlugin.getActiveLoop();
+                                        if (activeloop != null) {
+                                            activeloop.superBolusTo(System.currentTimeMillis() + 2 * 60L * 60 * 1000);
+                                            MainApp.bus().post(new EventRefreshOverview("WizardDialog"));
                                         }
-                                        DetailedBolusInfo detailedBolusInfo = new DetailedBolusInfo();
-                                        detailedBolusInfo.eventType = CareportalEvent.BOLUSWIZARD;
-                                        detailedBolusInfo.insulin = finalInsulinAfterConstraints;
-                                        detailedBolusInfo.carbs = finalCarbsAfterConstraints;
-                                        detailedBolusInfo.context = context;
-                                        detailedBolusInfo.glucose = bg;
-                                        detailedBolusInfo.glucoseType = "Manual";
-                                        detailedBolusInfo.carbTime = carbTime;
-                                        detailedBolusInfo.boluscalc = boluscalcJSON;
-                                        detailedBolusInfo.source = Source.USER;
-                                        result = pump.deliverTreatment(detailedBolusInfo);
-                                        if (!result.success) {
-                                            try {
-                                                AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                                builder.setTitle(MainApp.sResources.getString(R.string.treatmentdeliveryerror));
-                                                builder.setMessage(result.comment);
-                                                builder.setPositiveButton(MainApp.sResources.getString(R.string.ok), null);
-                                                builder.show();
-                                            } catch (WindowManager.BadTokenException | NullPointerException e) {
-                                                // window has been destroyed
-                                                Notification notification = new Notification(Notification.BOLUS_DELIVERY_ERROR, MainApp.sResources.getString(R.string.treatmentdeliveryerror), Notification.URGENT);
-                                                MainApp.bus().post(new EventNewNotification(notification));
+                                        ConfigBuilderPlugin.getCommandQueue().tempBasalPercent(0, 120, true, profile, new Callback() {
+                                            @Override
+                                            public void run() {
+                                                if (!result.success) {
+                                                    Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+                                                    i.putExtra("soundid", R.raw.boluserror);
+                                                    i.putExtra("status", result.comment);
+                                                    i.putExtra("title", MainApp.sResources.getString(R.string.tempbasaldeliveryerror));
+                                                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                    MainApp.instance().startActivity(i);
+                                                }
                                             }
-                                        }
+                                        });
                                     }
-                                });
-                                Answers.getInstance().logCustom(new CustomEvent("Wizard"));
+                                    DetailedBolusInfo detailedBolusInfo = new DetailedBolusInfo();
+                                    detailedBolusInfo.eventType = CareportalEvent.BOLUSWIZARD;
+                                    detailedBolusInfo.insulin = finalInsulinAfterConstraints;
+                                    detailedBolusInfo.carbs = finalCarbsAfterConstraints;
+                                    detailedBolusInfo.context = context;
+                                    detailedBolusInfo.glucose = bg;
+                                    detailedBolusInfo.glucoseType = "Manual";
+                                    detailedBolusInfo.carbTime = carbTime;
+                                    detailedBolusInfo.boluscalc = boluscalcJSON;
+                                    detailedBolusInfo.source = Source.USER;
+                                    if (detailedBolusInfo.insulin > 0 || ConfigBuilderPlugin.getActivePump().getPumpDescription().storesCarbInfo) {
+                                        ConfigBuilderPlugin.getCommandQueue().bolus(detailedBolusInfo, new Callback() {
+                                            @Override
+                                            public void run() {
+                                                if (!result.success) {
+                                                    Intent i = new Intent(MainApp.instance(), ErrorHelperActivity.class);
+                                                    i.putExtra("soundid", R.raw.boluserror);
+                                                    i.putExtra("status", result.comment);
+                                                    i.putExtra("title", MainApp.sResources.getString(R.string.treatmentdeliveryerror));
+                                                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                    MainApp.instance().startActivity(i);
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        TreatmentsPlugin.getPlugin().addToHistoryTreatment(detailedBolusInfo);
+                                    }
+                                    FabricPrivacy.getInstance().logCustom(new CustomEvent("Wizard"));
+                                }
                             }
                         }
                     });
@@ -396,20 +402,17 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
 
         if (profile == null) {
             ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), MainApp.sResources.getString(R.string.noprofile));
+            dismiss();
             return;
         }
 
         ArrayList<CharSequence> profileList;
         profileList = profileStore.getProfileList();
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(getContext(),
+        profileList.add(0, MainApp.sResources.getString(R.string.active));
+        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(getContext(),
                 R.layout.spinner_centered, profileList);
 
         profileSpinner.setAdapter(adapter);
-        // set selected to actual profile
-        for (int p = 0; p < profileList.size(); p++) {
-            if (profileList.get(p).equals(MainApp.getConfigBuilder().getProfileName()))
-                profileSpinner.setSelection(p);
-        }
 
         String units = profile.getUnits();
         bgUnits.setText(units);
@@ -420,80 +423,64 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         BgReading lastBg = DatabaseHelper.actualBg();
 
         if (lastBg != null) {
-            editBg.removeTextChangedListener(textWatcher);
-            //bgInput.setText(lastBg.valueToUnitsToString(units));
             editBg.setValue(lastBg.valueToUnits(units));
-            editBg.addTextChangedListener(textWatcher);
         } else {
-            editBg.removeTextChangedListener(textWatcher);
-            //bgInput.setText("");
             editBg.setValue(0d);
-            editBg.addTextChangedListener(textWatcher);
         }
-        ttCheckbox.setEnabled(MainApp.getConfigBuilder().getTempTargetFromHistory() != null);
+        ttCheckbox.setEnabled(TreatmentsPlugin.getPlugin().getTempTargetFromHistory() != null);
 
         // IOB calculation
-        MainApp.getConfigBuilder().updateTotalIOBTreatments();
-        IobTotal bolusIob = MainApp.getConfigBuilder().getLastCalculationTreatments().round();
-        MainApp.getConfigBuilder().updateTotalIOBTempBasals();
-        IobTotal basalIob = MainApp.getConfigBuilder().getLastCalculationTempBasals().round();
+        TreatmentsPlugin.getPlugin().updateTotalIOBTreatments();
+        IobTotal bolusIob = TreatmentsPlugin.getPlugin().getLastCalculationTreatments().round();
+        TreatmentsPlugin.getPlugin().updateTotalIOBTempBasals();
+        IobTotal basalIob = TreatmentsPlugin.getPlugin().getLastCalculationTempBasals().round();
 
         bolusIobInsulin.setText(DecimalFormatter.to2Decimal(-bolusIob.iob) + "U");
         basalIobInsulin.setText(DecimalFormatter.to2Decimal(-basalIob.basaliob) + "U");
 
-        // COB only if AMA is selected
-        if (ConfigBuilderPlugin.getActiveAPS() instanceof OpenAPSAMAPlugin && ConfigBuilderPlugin.getActiveAPS().getLastAPSResult() != null && ConfigBuilderPlugin.getActiveAPS().getLastAPSRun().after(new Date(System.currentTimeMillis() - 11 * 60 * 1000L))) {
-            cobLayout.setVisibility(View.VISIBLE);
-            cobAvailable = true;
-        } else {
-            cobLayout.setVisibility(View.GONE);
-            cobAvailable = false;
-        }
         calculateInsulin();
     }
 
     private void calculateInsulin() {
-        ProfileStore profile = MainApp.getConfigBuilder().getActiveProfileInterface().getProfile();
-        if (profileSpinner == null || profileSpinner.getSelectedItem() == null)
+        ProfileStore profileStore = MainApp.getConfigBuilder().getActiveProfileInterface().getProfile();
+        if (profileSpinner == null || profileSpinner.getSelectedItem() == null || profileStore == null)
             return; // not initialized yet
         String selectedAlternativeProfile = profileSpinner.getSelectedItem().toString();
-        Profile specificProfile = profile.getSpecificProfile(selectedAlternativeProfile);
+        Profile specificProfile;
+        if (selectedAlternativeProfile.equals(MainApp.sResources.getString(R.string.active)))
+            specificProfile = MainApp.getConfigBuilder().getProfile();
+        else
+            specificProfile = profileStore.getSpecificProfile(selectedAlternativeProfile);
 
         // Entered values
         Double c_bg = SafeParse.stringToDouble(editBg.getText());
         Integer c_carbs = SafeParse.stringToInt(editCarbs.getText());
         Double c_correction = SafeParse.stringToDouble(editCorr.getText());
-        Double corrAfterConstraint = MainApp.getConfigBuilder().applyBolusConstraints(c_correction);
+        Double corrAfterConstraint = c_correction;
+        if (c_correction > 0)
+            c_correction = MainApp.getConstraintChecker().applyBolusConstraints(new Constraint<>(c_correction)).value();
         if (c_correction - corrAfterConstraint != 0) { // c_correction != corrAfterConstraint doesn't work
-            editCorr.removeTextChangedListener(textWatcher);
             editCorr.setValue(0d);
-            editCorr.addTextChangedListener(textWatcher);
-            //wizardDialogDeliverButton.setVisibility(Button.GONE);
             ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), getString(R.string.bolusconstraintapplied));
             return;
         }
-        Integer carbsAfterConstraint = MainApp.getConfigBuilder().applyCarbsConstraints(c_carbs);
+        Integer carbsAfterConstraint = MainApp.getConstraintChecker().applyCarbsConstraints(new Constraint<>(c_carbs)).value();
         if (c_carbs - carbsAfterConstraint != 0) {
-            editCarbs.removeTextChangedListener(textWatcher);
             editCarbs.setValue(0d);
-            editCarbs.addTextChangedListener(textWatcher);
-            //wizardDialogDeliverButton.setVisibility(Button.GONE);
             ToastUtils.showToastInUiThread(MainApp.instance().getApplicationContext(), getString(R.string.carbsconstraintapplied));
             return;
         }
 
         c_bg = bgCheckbox.isChecked() ? c_bg : 0d;
-        TempTarget tempTarget = ttCheckbox.isChecked() ? MainApp.getConfigBuilder().getTempTargetFromHistory() : null;
+        TempTarget tempTarget = ttCheckbox.isChecked() ? TreatmentsPlugin.getPlugin().getTempTargetFromHistory() : null;
 
         // COB
         Double c_cob = 0d;
-        if (cobAvailable && cobCheckbox.isChecked()) {
-            if (ConfigBuilderPlugin.getActiveAPS().getLastAPSResult() != null && ConfigBuilderPlugin.getActiveAPS().getLastAPSRun().after(new Date(System.currentTimeMillis() - 11 * 60 * 1000L))) {
-                try {
-                    c_cob = SafeParse.stringToDouble(ConfigBuilderPlugin.getActiveAPS().getLastAPSResult().json().getString("COB"));
-                } catch (JSONException e) {
-                    log.error("Unhandled exception", e);
-                }
+        if (cobCheckbox.isChecked()) {
+            AutosensData autosensData = IobCobCalculatorPlugin.getPlugin().getLastAutosensData("Wizard COB");
+
+            if (autosensData != null) {
+                c_cob = autosensData.cob;
             }
         }
 
@@ -535,7 +522,7 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         bgTrendInsulin.setText(DecimalFormatter.to2Decimal(wizard.insulinFromTrend) + "U");
 
         // COB
-        if (cobAvailable && cobCheckbox.isChecked()) {
+        if (cobCheckbox.isChecked()) {
             cob.setText(DecimalFormatter.to2Decimal(c_cob) + "g IC: " + DecimalFormatter.to1Decimal(wizard.ic));
             cobInsulin.setText(DecimalFormatter.to2Decimal(wizard.insulinFromCOB) + "U");
         } else {
@@ -544,14 +531,14 @@ public class WizardDialog extends DialogFragment implements OnClickListener, Com
         }
 
         if (calculatedTotalInsulin > 0d || calculatedCarbs > 0d) {
-            String insulinText = calculatedTotalInsulin > 0d ? (DecimalFormatter.to2Decimal(calculatedTotalInsulin) + "U") : "";
+            String insulinText = calculatedTotalInsulin > 0d ? (DecimalFormatter.toPumpSupportedBolus(calculatedTotalInsulin) + "U") : "";
             String carbsText = calculatedCarbs > 0d ? (DecimalFormatter.to0Decimal(calculatedCarbs) + "g") : "";
-            total.setText(getString(R.string.result) + ": " + insulinText + " " + carbsText);
+            total.setText(MainApp.gs(R.string.result) + ": " + insulinText + " " + carbsText);
             okButton.setVisibility(View.VISIBLE);
         } else {
             // TODO this should also be run when loading the dialog as the OK button is initially visible
             //      but does nothing if neither carbs nor insulin is > 0
-            total.setText(getString(R.string.missing) + " " + DecimalFormatter.to0Decimal(wizard.carbsEquivalent) + "g");
+            total.setText(MainApp.gs(R.string.missing) + " " + DecimalFormatter.to0Decimal(wizard.carbsEquivalent) + "g");
             okButton.setVisibility(View.INVISIBLE);
         }
 
