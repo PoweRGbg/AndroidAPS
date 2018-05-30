@@ -2,6 +2,7 @@ package info.nightscout.androidaps.plugins.Careportal;
 
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
@@ -12,12 +13,9 @@ import android.widget.TextView;
 
 import com.squareup.otto.Subscribe;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import info.nightscout.androidaps.BuildConfig;
 import info.nightscout.androidaps.Config;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
@@ -26,13 +24,13 @@ import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.events.EventCareportalEventChange;
 import info.nightscout.androidaps.plugins.Careportal.Dialogs.NewNSTreatmentDialog;
 import info.nightscout.androidaps.plugins.Common.SubscriberFragment;
-import info.nightscout.androidaps.plugins.ConfigBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSettingsStatus;
 import info.nightscout.androidaps.plugins.Overview.OverviewFragment;
 import info.nightscout.utils.FabricPrivacy;
 
 public class CareportalFragment extends SubscriberFragment implements View.OnClickListener {
     private static Logger log = LoggerFactory.getLogger(CareportalFragment.class);
+
     TextView iage;
     TextView cage;
     TextView sage;
@@ -214,94 +212,55 @@ public class CareportalFragment extends SubscriberFragment implements View.OnCli
     public static void updateAge(Activity activity, final TextView sage, final TextView iage, final TextView cage, final TextView pbage) {
         if (activity != null) {
             activity.runOnUiThread(
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            CareportalEvent careportalEvent;
-                            NSSettingsStatus nsSettings = new NSSettingsStatus().getInstance();
-                            JSONObject extendedSettings = nsSettings.getExtendedSettings();
-                            // Thresholds in NS are in hours
-                            double iageThreshold = 7*24;
-                            double cageThreshold = 3*24;
-                            double sageThreshold = 7*24;
-                            double pbageThreshold = 15*24;
-                            log.debug("NSExtendedSettings are "+extendedSettings.toString());
-//                            try {
-                                JSONObject iageSettings = extendedSettings.optJSONObject("iage");
-                                if(iageSettings != null)
-                                    iageThreshold = iageSettings.optDouble("urgent", 7*24);
-                                JSONObject cageSettings = extendedSettings.optJSONObject("cage");
-                                if(cageSettings != null)
-                                    cageThreshold = cageSettings.optDouble("urgent", 3*24);
-                                    log.debug("cageThreshold is "+cageThreshold);
-                                JSONObject sageSettings = extendedSettings.optJSONObject("sage");
-                                if(sageSettings != null)
-                                    sageThreshold = sageSettings.optDouble("urgent", 7*24);
-//                            } catch (JSONException e) {
-//                                log.error("Unhandled exception", e);
-//                            }
-                            String notavailable = OverviewFragment.shorttextmode ? "-" : MainApp.sResources.getString(R.string.notavailable);
-                            if (sage != null) {
-                                careportalEvent = MainApp.getDbHelper().getLastCareportalEvent(CareportalEvent.SENSORCHANGE);
-                                if(careportalEvent != null) {
-                                    if(careportalEvent.isOlderThan( sageThreshold/24)){
-                                        sage.setTextColor(MainApp.sResources.getColor(R.color.low));
-                                        sage.setText(careportalEvent.age());
-                                    } else {
-                                        sage.setText(careportalEvent.age());
-                                    }
+                    () -> {
+                        CareportalEvent careportalEvent;
+                        NSSettingsStatus nsSettings = new NSSettingsStatus().getInstance();
 
-                                } else {
-                                    sage.setText(notavailable);
-                                }
-                            }
-                            if (iage != null) {
-                                careportalEvent = MainApp.getDbHelper().getLastCareportalEvent(CareportalEvent.INSULINCHANGE);
-                                if(careportalEvent != null) {
-                                    if(careportalEvent.isOlderThan(iageThreshold/24)){
-                                        iage.setTextColor(MainApp.sResources.getColor(R.color.low));
-                                        iage.setText(careportalEvent.age());
-                                    } else {
-                                        iage.setText(careportalEvent.age());
-                                    }
+                        double iageUrgent = nsSettings.getExtendedWarnValue("iage", "urgent", 96);
+                        double iageWarn = nsSettings.getExtendedWarnValue("iage", "warn", 72);
+                        handleAge(iage, CareportalEvent.INSULINCHANGE, iageWarn, iageUrgent);
 
-                                } else {
-                                    iage.setText(notavailable);
-                                }
-                            }
-                            if (cage != null) {
-                                careportalEvent = MainApp.getDbHelper().getLastCareportalEvent(CareportalEvent.SITECHANGE);
-                                    if (careportalEvent != null) {
-                                        if(careportalEvent.isOlderThan(cageThreshold/24)){
-                                            cage.setTextColor(MainApp.sResources.getColor(R.color.low));
-                                            cage.setText(careportalEvent.age());
-                                        } else {
-                                            cage.setText(careportalEvent.age());
-                                        }
+                        double cageUrgent = nsSettings.getExtendedWarnValue("cage", "urgent", 72);
+                        double cageWarn = nsSettings.getExtendedWarnValue("cage", "warn", 48);
+                        handleAge(sage, CareportalEvent.SITECHANGE, cageWarn, cageUrgent);
 
-                                    } else {
-                                        cage.setText(notavailable);
-                                    }
-                            }
-                            if (pbage != null) {
-                                careportalEvent = MainApp.getDbHelper().getLastCareportalEvent(CareportalEvent.PUMPBATTERYCHANGE);
-                                if(careportalEvent != null) {
-                                    if(careportalEvent.isOlderThan(pbageThreshold/24)){
-                                        pbage.setTextColor(MainApp.sResources.getColor(R.color.low));
-                                        pbage.setText(careportalEvent.age());
-                                    } else {
-                                        pbage.setText(careportalEvent.age());
-                                    }
+                        double sageUrgent = nsSettings.getExtendedWarnValue("sage", "urgent", 166);
+                        double sageWarn = nsSettings.getExtendedWarnValue("sage", "warn", 164);
+                        handleAge(sage, CareportalEvent.SITECHANGE, sageWarn, sageUrgent);
 
-                                } else {
-                                    pbage.setText(notavailable);
-                                }
-                            }
-                        }
+                        double pbageUrgent = nsSettings.getExtendedWarnValue("pgage", "urgent", 360);
+                        double pbageWarn = nsSettings.getExtendedWarnValue("pgage", "warn", 240);
+                        handleAge(pbage, CareportalEvent.PUMPBATTERYCHANGE, pbageWarn, pbageUrgent);
                     }
             );
         }
     }
 
+    public static int determineTextColor(CareportalEvent careportalEvent, double warnThreshold, double urgentThreshold) {
+        if (careportalEvent.isOlderThan(urgentThreshold)) {
+            return MainApp.gc(R.color.low);
+        } else if (careportalEvent.isOlderThan(warnThreshold)) {
+            return MainApp.gc(R.color.high);
+        } else {
+            return Color.WHITE;
+        }
+
+    }
+
+    private static TextView handleAge(final TextView age, String eventType, double warnThreshold, double urgentThreshold) {
+        String notavailable = OverviewFragment.shorttextmode ? "-" : MainApp.gs(R.string.notavailable);
+
+        if (age != null) {
+            CareportalEvent careportalEvent = MainApp.getDbHelper().getLastCareportalEvent(eventType);
+            if (careportalEvent != null) {
+                age.setTextColor(CareportalFragment.determineTextColor(careportalEvent, warnThreshold, urgentThreshold));
+                age.setText(careportalEvent.age());
+            } else {
+                age.setText(notavailable);
+            }
+        }
+
+        return age;
+    }
 }
 
