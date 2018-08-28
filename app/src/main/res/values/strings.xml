@@ -242,6 +242,7 @@
     <string name="it_lang" translatable="false">Italian</string>
     <string name="ro_lang" translatable="false">Romanian</string>
     <string name="ru_lang" translatable="false">Russian</string>
+    <string name="sk_lang" translatable="false">Slovak</string>
     <string name="sv_lang" translatable="false">Swedish</string>
     <string name="fr_lang" translatable="false">French</string>
     <string name="zh_lang" translatable="false">Chinese</string>
@@ -1082,6 +1083,11 @@
     <string name="openapsama_max_daily_safety_multiplier">Max daily safety multiplier</string>
     <string name="openapsama_current_basal_safety_multiplier">Current basal safety multiplier</string>
     <string name="value_unavailable_short">n/a</string>
+    <string translatable="false" name="key_virtualpump_type">virtualpump_type</string>
+    <string name="virtualpump_type">Virtual Pump Type</string>
+    <string name="virtualpump_definition">Pump Definition</string>
+    <string name="virtualpump_pump_def">Bolus: Step=%1$s\nExtended Bolus: [Step=%2$s, Duration=%3$smin-%4$sh]\nBasal: Step=%5$s\nTBR: %6$s (by %7$s), Duration=%8$smin-%9$sh\n%10$s</string>
+    <string name="virtualpump_pump_def_extended_note">* Ranged basal/bolus values are not supported by Virtual Pump.</string>
     <string name="ns_autobackfill_title">Autobackfill BG</string>
     <string name="ga_lang" translatable="false">Irish</string>
     <string name="wear_wizard_settings">Wizard Settings</string>
@@ -1183,6 +1189,12 @@
     <string name="as">AS</string>
     <string name="versionavailable">Version %1$s available</string>
     <string name="time_offset">Time offset</string>
+    <string name="key_aps_mode" translatable="false">aps_mode</string>
+    <string name="setupwizard_preferred_aps_mode">Preferred APS mode</string>
+    <string name="treatments_wizard_total_label">Total</string>
+    <string name="calculation_short">Calc</string>
+    <string name="handshaking">Handshaking</string>
+    <string name="sendlogfiles">Send today\'s log files to developers along with this time. Unexpected situation.</string>
 
     <plurals name="objective_days">
         <item quantity="one">%1$d day</item>
