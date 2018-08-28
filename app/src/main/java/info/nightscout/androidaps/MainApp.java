@@ -44,6 +44,7 @@ import info.nightscout.androidaps.plugins.Loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.NSClientInternal.NSClientPlugin;
 import info.nightscout.androidaps.plugins.NSClientInternal.NSUpload;
 import info.nightscout.androidaps.plugins.NSClientInternal.receivers.AckAlarmReceiver;
+import info.nightscout.androidaps.plugins.NSClientInternal.receivers.DBAccessReceiver;
 import info.nightscout.androidaps.plugins.OpenAPSAMA.OpenAPSAMAPlugin;
 import info.nightscout.androidaps.plugins.OpenAPSMA.OpenAPSMAPlugin;
 import info.nightscout.androidaps.plugins.OpenAPSSMB.OpenAPSSMBPlugin;
@@ -100,6 +101,7 @@ public class MainApp extends Application {
     private static DataReceiver dataReceiver = new DataReceiver();
     private static NSAlarmReceiver alarmReciever = new NSAlarmReceiver();
     private static AckAlarmReceiver ackAlarmReciever = new AckAlarmReceiver();
+    private static DBAccessReceiver dbAccessReciever = new DBAccessReceiver();
     private LocalBroadcastManager lbm;
 
     public static boolean devBranch;
@@ -172,17 +174,12 @@ public class MainApp extends Application {
             pluginsList.add(TreatmentsPlugin.getPlugin());
             if (Config.SAFETY) pluginsList.add(SafetyPlugin.getPlugin());
             if (Config.APS) pluginsList.add(ObjectivesPlugin.getPlugin());
-            if (!Config.NSCLIENT)
-                pluginsList.add(SourceXdripPlugin.getPlugin());
+            pluginsList.add(SourceXdripPlugin.getPlugin());
             pluginsList.add(SourceNSClientPlugin.getPlugin());
-            if (!Config.NSCLIENT)
-                pluginsList.add(SourceMM640gPlugin.getPlugin());
-            if (!Config.NSCLIENT)
-                pluginsList.add(SourceGlimpPlugin.getPlugin());
-            if (!Config.NSCLIENT)
-                pluginsList.add(SourceDexcomG5Plugin.getPlugin());
-            if (!Config.NSCLIENT)
-                pluginsList.add(SourcePoctechPlugin.getPlugin());
+            pluginsList.add(SourceMM640gPlugin.getPlugin());
+            pluginsList.add(SourceGlimpPlugin.getPlugin());
+            pluginsList.add(SourceDexcomG5Plugin.getPlugin());
+            pluginsList.add(SourcePoctechPlugin.getPlugin());
             if (Config.SMSCOMMUNICATORENABLED) pluginsList.add(SmsCommunicatorPlugin.getPlugin());
             pluginsList.add(FoodPlugin.getPlugin());
 
@@ -232,6 +229,9 @@ public class MainApp extends Application {
 
         //register ack alarm
         lbm.registerReceiver(ackAlarmReciever, new IntentFilter(Intents.ACTION_ACK_ALARM));
+
+        //register dbaccess
+        lbm.registerReceiver(dbAccessReciever, new IntentFilter(Intents.ACTION_DATABASE));
     }
 
     private void startKeepAliveService() {
