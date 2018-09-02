@@ -5,8 +5,10 @@ import android.support.annotation.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.db.ExtendedBolus;
 import info.nightscout.androidaps.db.Source;
+import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.TreatmentsInterface;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.PumpDanaR.DanaRPump;
@@ -46,7 +48,6 @@ public class MsgStatusBolusExtended extends MessageBase {
         pump.extendedBolusAbsoluteRate = extendedBolusAbsoluteRate;
         pump.extendedBolusStart = extendedBolusStart;
         pump.extendedBolusRemainingMinutes = extendedBolusRemainingMinutes;
-
         updateExtendedBolusInDB();
 
         if (L.isEnabled(L.PUMPCOMM)) {
@@ -66,7 +67,11 @@ public class MsgStatusBolusExtended extends MessageBase {
     }
 
     public static void updateExtendedBolusInDB() {
-        TreatmentsInterface treatmentsInterface = TreatmentsPlugin.getPlugin();
+        TreatmentsInterface treatmentsInterface = new TreatmentsPlugin();
+        if ( TreatmentsPlugin.getPlugin() != null) {
+            treatmentsInterface = TreatmentsPlugin.getPlugin();
+        }
+
         DanaRPump pump = DanaRPump.getInstance();
         long now = System.currentTimeMillis();
 
