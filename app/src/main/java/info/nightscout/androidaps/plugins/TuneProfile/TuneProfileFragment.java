@@ -103,8 +103,10 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
 //            resultView.setText(TuneProfile.bgReadings(daysBack));
                 try {
                     TuneProfilePlugin tuneProfile = new TuneProfilePlugin();
-                    resultView.setText(tuneProfile.result(daysBack));
-                    tuneProfileSwitch.setVisibility(View.VISIBLE);
+                    String result = tuneProfile.result(daysBack);
+                    resultView.setText(result);
+                    if (result.startsWith("-----"))
+                        tuneProfileSwitch.setVisibility(View.VISIBLE);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ParseException e) {
@@ -159,7 +161,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    warningView.setText("Don't run tune for more than 5 days back! It will cause app crashesh and too much data usage! Don't even try to run whithout WiFi connectivity!");
+                    warningView.setText("Don't run tune for more than 5 days back! It will cause app crashesh and too much data usage! Don't even try to run without WiFi connectivity!");
                     resultView.setText("Press run");
                 }
             });

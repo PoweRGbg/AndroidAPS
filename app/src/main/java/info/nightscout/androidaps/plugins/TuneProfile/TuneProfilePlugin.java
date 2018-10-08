@@ -1297,7 +1297,9 @@ public class TuneProfilePlugin extends PluginBase {
         long endTime = c.getTimeInMillis();
         long starttime = endTime - (24 * 60 * 60 * 1000L);
 //        Date lastProfileChange = NSService.lastProfileChange();
-        Date lastProfileChange = new Date(TreatmentsPlugin.getPlugin().getProfileSwitchFromHistory(endTime).date);
+//        Date lastProfileChange = new Date(TreatmentsPlugin.getPlugin().getProfileSwitchFromHistory(endTime).date);
+        Date lastProfileChange = new Date(TreatmentsPlugin.getPlugin().getProfileSwitchFromHistory(System.currentTimeMillis()).date);
+        log.debug("Last profile change was: "+lastProfileChange.toString() + " days "+ (System.currentTimeMillis() - lastProfileChange.getTime())/(24*60*60*1000L)+" hours "+ (System.currentTimeMillis() - lastProfileChange.getTime())/(60*60*1000L)+" ago");
         int toMgDl = 1;
         getProfile();
         if(profile.equals(null))
@@ -1305,14 +1307,13 @@ public class TuneProfilePlugin extends PluginBase {
         tunedProfileResult = profile;
         if(profile.getUnits().equals("mmol"))
             toMgDl = 18;
-        log.debug("ActiveProfile units: " + profile.getUnits()+" so divisor is "+toMgDl);
         //Check if Wifi is Connected
 //        if(!nsService.isWifiConnected()){
            // return "READ THE WARNING!";
 //        }
         // check if daysBack goes before the last profile switch
         if((System.currentTimeMillis() - (daysBack * 24 * 60 * 60 * 1000L)) < lastProfileChange.getTime()){
-            //return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (24 * 60 * 60 * 1000L)+" days ago)";
+            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (24 * 60 * 60 * 1000L)+" days ago)";
         }
         if(daysBack < 1){
             return "Sorry I cannot do it for less than 1 day!";
