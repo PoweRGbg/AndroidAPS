@@ -303,7 +303,10 @@ public class IobCobThread extends Thread {
                         autosensDataTable.put(bgTime, autosensData);
                     if (L.isEnabled(L.AUTOSENS))
                         log.debug("Running detectSensitivity from: " + DateUtil.dateAndTimeString(oldestTimeWithData) + " to: " + DateUtil.dateAndTimeString(bgTime) + " lastDataTime:" + iobCobCalculatorPlugin.lastDataTime());
-                    AutosensResult sensitivity = iobCobCalculatorPlugin.detectSensitivityWithLock(oldestTimeWithData, bgTime);
+                    AutosensResult sensitivity = new AutosensResult();
+                    // dont run if switch is off :)
+                    if(SP.getBoolean(R.string.key_openapsama_useautosens, false))
+                        sensitivity = iobCobCalculatorPlugin.detectSensitivityWithLock(oldestTimeWithData, bgTime);
                     if (L.isEnabled(L.AUTOSENS))
                         log.debug("Sensitivity result: " + sensitivity.toString());
                     autosensData.autosensResult = sensitivity;
