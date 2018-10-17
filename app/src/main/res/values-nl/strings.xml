@@ -889,6 +889,8 @@ Stel in en gebruik tijdelijk en standaard tijdelijke streefdoelen (bv. bij sport
   <string name="closedmodedisabledinpreferences">Closed Loop modus gedeactiveerd in de voorkeuren</string>
   <string name="autosensdisabledinpreferences">Autosens gedeactiveerd in de voorkeuren</string>
   <string name="smbdisabledinpreferences">SMB gedeactiveerd in de voorkeuren</string>
+  <string name="uamdisabledinpreferences">UAM gedeactiveerd in configuratie</string>
+  <string name="uamdisabledoref1notselected">UAM gedeactiveerd omdat het Oref1 gevoeligheid plugin nodig heeft</string>
   <string name="limitingbasalratio">Beperken van basaal tot max %1$.2f E/uur wegens de %2$s</string>
   <string name="pumplimit">Pomp limiet</string>
   <string name="itmustbepositivevalue">dit moet een positieve waarde zijn</string>
@@ -953,6 +955,7 @@ Stel in en gebruik tijdelijk en standaard tijdelijke streefdoelen (bv. bij sport
   <string name="virtualpump_type">Virtuele pomp Type</string>
   <string name="virtualpump_definition">Pomp definitie</string>
   <string name="virtualpump_pump_def">Bolus: Stap=%1$s\nExtended Bolus: [Stap=%2$s, Duur=%3$smin-%4$sh]\nBasaal: Stap=%5$s\nTBR: %6$s (by %7$s), Duur=%8$smin-%9$sh\n%10$s</string>
+  <string name="virtualpump_pump_def_extended_note">* Alleen absolute waardes (geen van-tot bereik) worden ondersteund voor basaal / bolus in virtuele pomp.</string>
   <string name="ns_autobackfill_title">Automatische BG aanvullen</string>
   <string name="wear_wizard_settings">Wizard instellingen</string>
   <string name="wear_wizard_settings_summary">Berekeningen inclusief in het resultaat van de wizard</string>
