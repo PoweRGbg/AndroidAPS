@@ -68,7 +68,7 @@ import java.util.List;
  -- for use in oref0 autotuning algorithm
  -- get glucoseData and sort it
  -- get profile - done
- -- get treatments
+ -- get treatments -done
 
  */
 
@@ -1237,7 +1237,7 @@ public class TuneProfilePlugin extends PluginBase {
                 log.debug("Limiting adjusted ISF of "+round(adjustedISF,2)+" to "+round(maxISF,2)+"(which is pump ISF of "+pumpISF+"/"+autotuneMin+")");
                 adjustedISF = maxISF;
             } else if (adjustedISF < minISF) {
-                log.debug("Limiting adjusted ISF of"+round(adjustedISF,2)+" to "+round(minISF,2)+"(which is pump ISF of "+pumpISF+"/"+autotuneMax+")");
+                log.debug("Limiting adjusted ISF of "+round(adjustedISF,2)+" to "+round(minISF,2)+"(which is pump ISF of "+pumpISF+"/"+autotuneMax+")");
                 adjustedISF = minISF;
             }
 
@@ -1313,7 +1313,7 @@ public class TuneProfilePlugin extends PluginBase {
 //        }
         // check if daysBack goes before the last profile switch
         if((System.currentTimeMillis() - (daysBack * 24 * 60 * 60 * 1000L)) < lastProfileChange.getTime()){
-            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (24 * 60 * 60 * 1000L)+" days ago)";
+//            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (24 * 60 * 60 * 1000L)+" days ago)";
         }
         if(daysBack < 1){
             return "Sorry I cannot do it for less than 1 day!";
@@ -1408,7 +1408,8 @@ public class TuneProfilePlugin extends PluginBase {
             } catch (JSONException e) {
                 log.error("Unhandled exception", e);
             }
-
+            log.debug("isfList before Tune: "+profile.getIsfList());
+            log.debug("Tuned IsfList:" +tunedProfileResult.getIsfList());
             return result;
         } else
             return "No Result";

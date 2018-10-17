@@ -55,8 +55,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
     TextView resultView;
     TextView lastRunView;
     EditText tune_days;
-    //TuneProfile tuneProfile = new TuneProfile();
-
+    boolean enableProfileSwitch = true;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         try {
@@ -105,7 +104,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
                     TuneProfilePlugin tuneProfile = new TuneProfilePlugin();
                     String result = tuneProfile.result(daysBack);
                     resultView.setText(result);
-                    if (result.startsWith("-----"))
+                    if (enableProfileSwitch)
                         tuneProfileSwitch.setVisibility(View.VISIBLE);
                 } catch (IOException e) {
                     e.printStackTrace();
