@@ -597,4 +597,24 @@ public class Profile {
     public int getTimeshift() {
         return timeshift;
     }
+
+    public JSONArray getRawIsf() {
+        return isf;
+    }
+
+    public JSONArray getRawIc() {
+        return ic;
+    }
+
+    public JSONArray getRawBasal() {
+        return basal;
+    }
+
+    public JSONArray getRawTargetLow() {
+        return targetLow;
+    }
+
+    public JSONArray getRawTargetHigh() {
+        return targetHigh;
+    }
 }

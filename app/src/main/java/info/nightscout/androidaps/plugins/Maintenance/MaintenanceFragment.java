@@ -76,6 +76,10 @@ public class MaintenanceFragment extends Fragment {
             startActivity(new Intent(getActivity(), LogSettingActivity.class));
         });
 
+        view.findViewById(R.id.profile_copy).setOnClickListener(view1 -> {
+            MaintenancePlugin.getPlugin().copyActiveNSProfileToLocalProfile();
+        });
+
 
         return view;
     }

@@ -22,13 +22,19 @@ import java.util.zip.ZipOutputStream;
 
 import info.nightscout.androidaps.BuildConfig;
 import info.nightscout.androidaps.Config;
+import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
+import info.nightscout.androidaps.data.Profile;
+import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.NSClientInternal.data.NSSettingsStatus;
+import info.nightscout.androidaps.plugins.ProfileLocal.LocalProfilePlugin;
+import info.nightscout.androidaps.plugins.ProfileNS.NSProfilePlugin;
 import info.nightscout.utils.SP;
 
 public class MaintenancePlugin extends PluginBase {
@@ -205,6 +211,20 @@ public class MaintenancePlugin extends PluginBase {
         }
 
         out.close();
+    }
+
+    public static void copyActiveNSProfileToLocalProfile() {
+        ProfileStore profileStore = NSProfilePlugin.getPlugin().getProfile();
+        Profile defaultNsProfile =  profileStore.getDefaultProfile();
+
+        SP.putBoolean(LocalProfilePlugin.LOCAL_PROFILE + "mmol", Constants.MMOL.equals(defaultNsProfile.getUnits()));
+        SP.putBoolean(LocalProfilePlugin.LOCAL_PROFILE + "mgdl", Constants.MGDL.equals(defaultNsProfile.getUnits()));
+        SP.putString(LocalProfilePlugin.LOCAL_PROFILE + "dia", String.valueOf(defaultNsProfile.getDia()));
+        SP.putString(LocalProfilePlugin.LOCAL_PROFILE + "ic", defaultNsProfile.getRawIc().toString());
+        SP.putString(LocalProfilePlugin.LOCAL_PROFILE + "isf", defaultNsProfile.getRawIsf().toString());
+        SP.putString(LocalProfilePlugin.LOCAL_PROFILE + "basal", defaultNsProfile.getRawBasal().toString());
+        SP.putString(LocalProfilePlugin.LOCAL_PROFILE + "targetlow", defaultNsProfile.getRawTargetLow().toString());
+        SP.putString(LocalProfilePlugin.LOCAL_PROFILE + "targethigh", defaultNsProfile.getRawTargetHigh().toString());
     }
 
     public static Intent sendMail(Uri attachementUri, String recipient, String subject)  {
