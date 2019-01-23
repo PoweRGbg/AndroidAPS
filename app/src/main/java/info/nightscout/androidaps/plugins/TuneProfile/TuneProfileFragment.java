@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.crashlytics.android.Crashlytics;
@@ -55,6 +56,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
     TextView resultView;
     TextView lastRunView;
     EditText tune_days;
+    Switch overwriteLP;
     boolean enableProfileSwitch = true;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -67,6 +69,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
             runTuneNowButton = (Button) view.findViewById(R.id.tune_run);
             tuneProfileSwitch = (Button) view.findViewById(R.id.tune_profileswitch);
             tune_days = (EditText) view.findViewById(R.id.tune_days);
+            overwriteLP = (Switch) view.findViewById(R.id.overwriteLocalProfile);
             runTuneNowButton.setOnClickListener(this);
             tuneProfileSwitch.setVisibility(View.GONE);
             tuneProfileSwitch.setOnClickListener(this);
@@ -92,6 +95,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
             }
         }
     }
+
     @Override
     public void onClick(View view) {
         int id = view.getId();
@@ -102,6 +106,7 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
 //            resultView.setText(TuneProfile.bgReadings(daysBack));
                 try {
                     TuneProfilePlugin tuneProfile = new TuneProfilePlugin();
+                    tuneProfile.overwriteLocalProfile(overwriteLP.isChecked());
                     String result = tuneProfile.result(daysBack);
                     resultView.setText(result);
                     if (enableProfileSwitch)

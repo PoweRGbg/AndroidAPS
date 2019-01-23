@@ -191,6 +191,33 @@
                     android:text="1" />
 
             </LinearLayout>
+            <View
+                android:layout_width="fill_parent"
+                android:layout_height="2dip"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginRight="20dp"
+                android:layout_marginTop="5dp"
+                android:background="@color/listdelimiter" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <Switch
+                    android:id="@+id/overwriteLocalProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="20dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginRight="20dp"
+                    android:layout_marginBottom="5dp"
+                    android:switchPadding="20dp"
+                    android:text="@string/tuneprofile_overwriteLP"
+                    tools:text="@string/tuneprofile_overwriteLP" />
+
+            </LinearLayout>
 
             <View
                 android:layout_width="fill_parent"

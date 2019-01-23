@@ -95,7 +95,7 @@ public class TuneProfilePlugin extends PluginBase {
     private static Intervals<TemporaryBasal> tempBasals = new NonOverlappingIntervals<>();
     private static Intervals<ExtendedBolus> extendedBoluses = new NonOverlappingIntervals<>();
     private NSService nsService = new NSService();
-    private boolean overwriteLocalProfile = true;
+    private boolean overwriteLocalProfile = false;
 
     public boolean nsDataDownloaded = false;
 
@@ -858,7 +858,7 @@ public class TuneProfilePlugin extends PluginBase {
         //log.debug(carbRatio);
         double CSF = ISF / carbRatio;
 
-        //Compy profile values to pump ones
+        //Copy profile values to pump ones
         pumpISF = ISF;
         log.debug("PumpISF is: "+pumpISF);
         pumpCarbRatio = carbRatio;
@@ -1445,8 +1445,8 @@ public class TuneProfilePlugin extends PluginBase {
             } catch (JSONException e) {
                 log.error("Unhandled exception", e);
             }
-            log.debug("isfList before Tune: "+profile.getIsfList());
-            log.debug("Tuned IsfList:" +tunedProfileResult.getIsfList());
+//            log.debug("isfList before Tune: "+profile.getIsfList());
+//            log.debug("Tuned IsfList:" +tunedProfileResult.getIsfList());
             return result;
         } else
             return "No Result";
@@ -1469,7 +1469,7 @@ public class TuneProfilePlugin extends PluginBase {
 
     // This method should overwrite the existing Local Profile with the tuned values we're passing as argument
     public void overwriteLocalProfile(boolean value){
-        overwriteLocalProfile = value;
+        this.overwriteLocalProfile = value;
     }
 
     public String formatDate(Date date){
