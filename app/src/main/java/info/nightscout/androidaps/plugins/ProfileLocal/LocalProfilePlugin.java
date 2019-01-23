@@ -111,6 +111,7 @@ public class LocalProfilePlugin extends PluginBase implements ProfileInterface {
         }
         try {
             basal = new JSONArray(SP.getString(LOCAL_PROFILE + "basal", DEFAULTARRAY));
+            log.debug("Loaded basals: "+basal.toString());
         } catch (JSONException e1) {
             try {
                 basal = new JSONArray(DEFAULTARRAY);

@@ -15,6 +15,7 @@ import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.events.EventProfileStoreChanged;
 import info.nightscout.androidaps.interfaces.PluginDescription;
+import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.db.BGDatum;
@@ -94,6 +95,7 @@ public class TuneProfilePlugin extends PluginBase {
     private static Intervals<TemporaryBasal> tempBasals = new NonOverlappingIntervals<>();
     private static Intervals<ExtendedBolus> extendedBoluses = new NonOverlappingIntervals<>();
     private NSService nsService = new NSService();
+    private boolean overwriteLocalProfile = true;
 
     public boolean nsDataDownloaded = false;
 
@@ -1405,6 +1407,41 @@ public class TuneProfilePlugin extends PluginBase {
                 SP.putString("autotuneprofile", profileStore.getData().toString());
                 log.debug("Entered in ProfileStore "+profileStore.getSpecificProfile(MainApp.gs(R.string.tuneprofile_name)));
                 MainApp.bus().post(new EventProfileStoreChanged());
+                log.debug("Overwrite LocalProfile is: "+overwriteLocalProfile);
+                if(overwriteLocalProfile){
+//                    JSONObject json = new JSONObject();
+//                    JSONObject store = new JSONObject();
+                    log.debug("Trying to save the tuned profile as local!");
+                    final String LOCAL_PROFILE = "LocalProfile";
+                    boolean mgdl = (profile.getUnits() == Constants.MGDL);
+                    JSONObject localPprofile = new JSONObject();
+                    try {
+                        json.put("defaultProfile", LOCAL_PROFILE);
+                        json.put("store", store);
+                        localPprofile.put("dia", profile.getDia());
+                        localPprofile.put("carbratio", convertedProfile.getString("carbratio"));
+                        localPprofile.put("sens", convertedProfile.getString("sens"));
+                        localPprofile.put("basal", basals);
+                        localPprofile.put("target_low", convertedProfile.getJSONArray("target_low"));
+                        localPprofile.put("target_high", convertedProfile.getJSONArray("target_high"));
+                        localPprofile.put("units", mgdl ? Constants.MGDL : Constants.MMOL);
+                        store.put(LOCAL_PROFILE, localPprofile);
+                    } catch (JSONException e) {
+                        log.error("Unhandled exception", e);
+                    }
+                    SP.putBoolean(LOCAL_PROFILE + "mmol", !mgdl);
+                    SP.putBoolean(LOCAL_PROFILE + "mgdl", mgdl);
+                    SP.putString(LOCAL_PROFILE + "dia",  ""+profile.getDia());
+                    SP.putString(LOCAL_PROFILE + "ic", convertedProfile.getString("carbratio"));
+                    SP.putString(LOCAL_PROFILE + "isf", convertedProfile.getString("sens"));
+                    SP.putString(LOCAL_PROFILE + "basal", basals.toString());
+                    SP.putString(LOCAL_PROFILE + "targetlow", convertedProfile.getJSONArray("target_low").toString());
+                    SP.putString(LOCAL_PROFILE + "targethigh", convertedProfile.getJSONArray("target_high").toString());
+                    log.debug("Saved basals: "+basals.toString());
+                    MainApp.bus().post(new EventProfileStoreChanged());
+
+                }
+
             } catch (JSONException e) {
                 log.error("Unhandled exception", e);
             }
@@ -1428,6 +1465,11 @@ public class TuneProfilePlugin extends PluginBase {
             }
         }
 
+    }
+
+    // This method should overwrite the existing Local Profile with the tuned values we're passing as argument
+    public void overwriteLocalProfile(boolean value){
+        overwriteLocalProfile = value;
     }
 
     public String formatDate(Date date){
