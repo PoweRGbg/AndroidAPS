@@ -1315,7 +1315,7 @@ public class TuneProfilePlugin extends PluginBase {
 //        }
         // check if daysBack goes before the last profile switch
         if((System.currentTimeMillis() - (daysBack * 24 * 60 * 60 * 1000L)) < lastProfileChange.getTime()){
-//            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (24 * 60 * 60 * 1000L)+" days ago)";
+            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (60 * 60 * 1000L)+" hours ago)";
         }
         if(daysBack < 1){
             return "Sorry I cannot do it for less than 1 day!";
@@ -1470,6 +1470,11 @@ public class TuneProfilePlugin extends PluginBase {
     // This method should overwrite the existing Local Profile with the tuned values we're passing as argument
     public void overwriteLocalProfile(boolean value){
         this.overwriteLocalProfile = value;
+    }
+
+    //Method to check for profileSwitch last x days
+    public boolean profileSwitchLastPeriod(int days){
+        return false;
     }
 
     public String formatDate(Date date){
