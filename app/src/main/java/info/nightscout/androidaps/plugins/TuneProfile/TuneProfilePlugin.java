@@ -1314,9 +1314,9 @@ public class TuneProfilePlugin extends PluginBase {
            // return "READ THE WARNING!";
 //        }
         // check if daysBack goes before the last profile switch
-        if((System.currentTimeMillis() - (daysBack * 24 * 60 * 60 * 1000L)) < lastProfileChange.getTime()){
-            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (60 * 60 * 1000L)+" hours ago)";
-        }
+//        if((System.currentTimeMillis() - (daysBack * 24 * 60 * 60 * 1000L)) < lastProfileChange.getTime()){
+//            return "ERROR -> I cannot tune before the last profile switch!("+(System.currentTimeMillis() - lastProfileChange.getTime()) / (60 * 60 * 1000L)+" hours ago)";
+//        }
         if(daysBack < 1){
             return "Sorry I cannot do it for less than 1 day!";
         } else {
@@ -1408,7 +1408,8 @@ public class TuneProfilePlugin extends PluginBase {
                 log.debug("Entered in ProfileStore "+profileStore.getSpecificProfile(MainApp.gs(R.string.tuneprofile_name)));
                 MainApp.bus().post(new EventProfileStoreChanged());
                 log.debug("Overwrite LocalProfile is: "+overwriteLocalProfile);
-                if(overwriteLocalProfile){
+                //Overwrite localProfile only if switch is on and there is no ProfileSwitch event
+                if(overwriteLocalProfile && !profileSwitchLastPeriod(daysBack)){
 //                    JSONObject json = new JSONObject();
 //                    JSONObject store = new JSONObject();
                     log.debug("Trying to save the tuned profile as local!");
@@ -1440,7 +1441,8 @@ public class TuneProfilePlugin extends PluginBase {
                     log.debug("Saved basals: "+basals.toString());
                     MainApp.bus().post(new EventProfileStoreChanged());
 
-                }
+                } else
+                    log.debug("Overwrite LocalProfile is "+overwriteLocalProfile + " or there is a profile switch for the tuned period!");
 
             } catch (JSONException e) {
                 log.error("Unhandled exception", e);
@@ -1474,6 +1476,10 @@ public class TuneProfilePlugin extends PluginBase {
 
     //Method to check for profileSwitch last x days
     public boolean profileSwitchLastPeriod(int days){
+        Date lastProfileChange = new Date(TreatmentsPlugin.getPlugin().getProfileSwitchFromHistory(System.currentTimeMillis()).date);
+        if((System.currentTimeMillis() - (days * 24 * 60 * 60 * 1000L)) < lastProfileChange.getTime()){
+            return true;
+        }
         return false;
     }
 

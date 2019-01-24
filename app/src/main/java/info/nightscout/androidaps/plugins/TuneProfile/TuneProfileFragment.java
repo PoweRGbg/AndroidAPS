@@ -71,7 +71,10 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
             tune_days = (EditText) view.findViewById(R.id.tune_days);
             overwriteLP = (Switch) view.findViewById(R.id.overwriteLocalProfile);
             runTuneNowButton.setOnClickListener(this);
-            tuneProfileSwitch.setVisibility(View.GONE);
+            if(TuneProfilePlugin.getPlugin().profileSwitchLastPeriod(Integer.parseInt(tune_days.getText().toString())) == true) {
+                tuneProfileSwitch.setVisibility(View.GONE);
+                overwriteLP.setVisibility(View.GONE);
+            }
             tuneProfileSwitch.setOnClickListener(this);
             updateGUI();
             return view;
@@ -109,7 +112,9 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
                     tuneProfile.overwriteLocalProfile(overwriteLP.isChecked());
                     String result = tuneProfile.result(daysBack);
                     resultView.setText(result);
-                    if (enableProfileSwitch)
+                    if (enableProfileSwitch && TuneProfilePlugin.getPlugin().profileSwitchLastPeriod(Integer.parseInt(tune_days.getText().toString())) == true)
+                        tuneProfileSwitch.setVisibility(View.GONE);
+                    else
                         tuneProfileSwitch.setVisibility(View.VISIBLE);
                 } catch (IOException e) {
                     e.printStackTrace();
