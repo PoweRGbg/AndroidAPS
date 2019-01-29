@@ -2,7 +2,6 @@ package info.nightscout.androidaps.plugins.TuneProfile;
 
 import android.content.res.Resources;
 import android.support.v4.util.LongSparseArray;
-import android.widget.TextView;
 
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
@@ -15,8 +14,8 @@ import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.events.EventProfileStoreChanged;
 import info.nightscout.androidaps.interfaces.PluginDescription;
-import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.ConfigBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.ProfileLocal.LocalProfilePlugin;
 import info.nightscout.androidaps.plugins.Treatments.Treatment;
 import info.nightscout.androidaps.db.BGDatum;
 import info.nightscout.androidaps.db.BgReading;
@@ -1440,7 +1439,8 @@ public class TuneProfilePlugin extends PluginBase {
                     SP.putString(LOCAL_PROFILE + "targethigh", convertedProfile.getJSONArray("target_high").toString());
                     log.debug("Saved basals: "+basals.toString());
                     MainApp.bus().post(new EventProfileStoreChanged());
-
+                    LocalProfilePlugin.getPlugin().setEdited(true);
+                    LocalProfilePlugin.getPlugin().loadSettings();
                 } else
                     log.debug("Overwrite LocalProfile is "+overwriteLocalProfile + " or there is a profile switch for the tuned period!");
 
