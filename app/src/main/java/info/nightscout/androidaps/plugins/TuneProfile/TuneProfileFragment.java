@@ -114,7 +114,10 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
                     resultView.setText(result);
                     if (enableProfileSwitch && TuneProfilePlugin.getPlugin().profileSwitchLastPeriod(Integer.parseInt(tune_days.getText().toString())) == true && !result.startsWith("--"))
                         tuneProfileSwitch.setVisibility(View.GONE);
-                    else
+                    else if(TuneProfilePlugin.getPlugin().profileSwitchLastPeriod(Integer.parseInt(tune_days.getText().toString())) == true) {
+                        tuneProfileSwitch.setVisibility(View.GONE);
+                        overwriteLP.setVisibility(View.GONE);
+                    } else
                         tuneProfileSwitch.setVisibility(View.VISIBLE);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -171,7 +174,14 @@ public class TuneProfileFragment extends SubscriberFragment implements View.OnCl
                 @Override
                 public void run() {
                     warningView.setText("Don't run tune for more than 5 days back! It will cause app crashesh and too much data usage! Don't even try to run without WiFi connectivity!");
-                    resultView.setText("Press run");
+                    String lastResult = SP.getString(R.string.tuneprofile_last_result, "Press run");
+                    long lastRunTime = SP.getLong(R.string.tuneprofile_last_run, System.currentTimeMillis());
+                    // If lastResult is more than 2 hours old - dont show it
+                    if((System.currentTimeMillis()-lastRunTime)/(1000L*60) < 120) {
+                        resultView.setText(lastResult);
+                        tuneProfileSwitch.setVisibility(View.GONE);
+                    } else
+                        resultView.setText("Press run");
                 }
             });
     }

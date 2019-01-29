@@ -1449,6 +1449,9 @@ public class TuneProfilePlugin extends PluginBase {
             }
 //            log.debug("isfList before Tune: "+profile.getIsfList());
 //            log.debug("Tuned IsfList:" +tunedProfileResult.getIsfList());
+            //Save lasst result to sharedPreferences
+            SP.putString(R.string.tuneprofile_last_result, result);
+            SP.putLong(R.string.tuneprofile_last_run, System.currentTimeMillis());
             return result;
         } else
             return "No Result";

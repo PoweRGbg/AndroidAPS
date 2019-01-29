@@ -1213,6 +1213,8 @@
     <string name="autotune_shortname">AT</string>
     <string name="tuneprofile_name">Autotune</string>
     <string name="tuneprofile_overwriteLP">Overwrite LocalProfile</string>
+    <string name="tuneprofile_last_result" translatable="false">tuneprofile_last_result</string>
+    <string name="tuneprofile_last_run" translatable="false">tuneprofile_last_run</string>
 
 
     <plurals name="objective_days">
