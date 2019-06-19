@@ -19,6 +19,7 @@ import butterknife.Unbinder;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.plugins.general.automation.triggers.Trigger;
 import info.nightscout.androidaps.plugins.general.automation.triggers.TriggerBg;
+import info.nightscout.androidaps.plugins.general.automation.triggers.TriggerCOB;
 import info.nightscout.androidaps.plugins.general.automation.triggers.TriggerIob;
 import info.nightscout.androidaps.plugins.general.automation.triggers.TriggerLocation;
 import info.nightscout.androidaps.plugins.general.automation.triggers.TriggerProfilePercent;
@@ -44,6 +45,7 @@ public class ChooseTriggerDialog extends DialogFragment {
         add(new TriggerWifiSsid());
         add(new TriggerLocation());
         add(new TriggerAutosensValue());
+        add(new TriggerCOB());
     }};
 
     private Unbinder mUnbinder;
