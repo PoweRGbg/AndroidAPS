@@ -40,12 +40,12 @@ public class ChooseTriggerDialog extends DialogFragment {
         add(new TriggerRecurringTime());
         add(new TriggerBg());
         add(new TriggerIob());
+        add(new TriggerCOB());
         add(new TriggerProfilePercent());
         add(new TriggerTempTarget());
         add(new TriggerWifiSsid());
         add(new TriggerLocation());
         add(new TriggerAutosensValue());
-        add(new TriggerCOB());
     }};
 
     private Unbinder mUnbinder;

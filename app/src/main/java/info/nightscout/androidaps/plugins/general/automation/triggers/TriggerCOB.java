@@ -34,7 +34,7 @@ public class TriggerCOB extends Trigger {
     private final int maxValue = (int) (SP.getInt(R.string.key_treatmentssafety_maxcarbs, 48));
     private final double step = 1;
     private DecimalFormat decimalFormat = new DecimalFormat("1");
-    private InputDouble value = new InputDouble(100, (double) minValue, (double) maxValue, step, decimalFormat);
+    private InputDouble value = new InputDouble(0, (double) minValue, (double) maxValue, step, decimalFormat);
     private Comparator comparator = new Comparator();
 
     public TriggerCOB() {
@@ -83,7 +83,7 @@ public class TriggerCOB extends Trigger {
         try {
             o.put("type", TriggerCOB.class.getName());
             JSONObject data = new JSONObject();
-            data.put("value", getValue());
+            data.put("carbs", getValue());
             data.put("lastRun", lastRun);
             data.put("comparator", comparator.getValue().toString());
             o.put("data", data);
@@ -97,7 +97,7 @@ public class TriggerCOB extends Trigger {
     Trigger fromJSON(String data) {
         try {
             JSONObject d = new JSONObject(data);
-            value.setValue(JsonHelper.safeGetDouble(d, "value"));
+            value.setValue(JsonHelper.safeGetDouble(d, "carbs"));
             lastRun = JsonHelper.safeGetLong(d, "lastRun");
             comparator.setValue(Comparator.Compare.valueOf(JsonHelper.safeGetString(d, "comparator")));
         } catch (Exception e) {
@@ -108,12 +108,12 @@ public class TriggerCOB extends Trigger {
 
     @Override
     public int friendlyName() {
-        return R.string.autosenslabel;
+        return R.string.triggercoblabel;
     }
 
     @Override
     public String friendlyDescription() {
-        return MainApp.gs(R.string.autosenscompared, MainApp.gs(comparator.getValue().getStringRes()), getValue());
+        return MainApp.gs(R.string.cobcompared, MainApp.gs(comparator.getValue().getStringRes()), getValue());
     }
 
     @Override
@@ -144,9 +144,9 @@ public class TriggerCOB extends Trigger {
     @Override
     public void generateDialog(LinearLayout root, FragmentManager fragmentManager) {
         new LayoutBuilder()
-                .add(new StaticLabel(R.string.autosenslabel))
+                .add(new StaticLabel(R.string.triggercoblabel))
                 .add(comparator)
-                .add(new LabelWithElement(MainApp.gs(R.string.autosenslabel) + ": ", "", value))
+                .add(new LabelWithElement(MainApp.gs(R.string.triggercoblabel) + ": ", "", value))
                 .build(root);
     }
 }
