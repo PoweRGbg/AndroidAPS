@@ -107,6 +107,7 @@ public class TriggerCOBTest {
         iobCobCalculatorPlugin = AAPSMocker.mockIobCobCalculatorPlugin();
         AAPSMocker.mockProfileFunctions();
         AAPSMocker.mockSP();
+        AAPSMocker.mockL();
 
         PowerMockito.mockStatic(DateUtil.class);
         when(DateUtil.now()).thenReturn(now);
