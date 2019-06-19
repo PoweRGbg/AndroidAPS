@@ -96,7 +96,7 @@ public class TriggerCOBTest {
 
     @Test
     public void iconTest() {
-        Assert.assertEquals(Optional.of(R.drawable.as), new TriggerCOB().icon());
+        Assert.assertEquals(Optional.of(R.drawable.icon_cp_bolus_carbs), new TriggerCOB().icon());
     }
 
 

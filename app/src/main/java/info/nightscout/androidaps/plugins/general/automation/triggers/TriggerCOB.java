@@ -118,7 +118,7 @@ public class TriggerCOB extends Trigger {
 
     @Override
     public Optional<Integer> icon() {
-        return Optional.of(R.drawable.as);
+        return Optional.of(R.drawable.icon_cp_bolus_carbs);
     }
 
     @Override
