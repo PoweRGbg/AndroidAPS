@@ -78,4 +78,15 @@ public class Constants {
     //Storage [MB]
     public static final long MINIMUM_FREE_SPACE = 200;
 
+    // Overview
+    public static final double LOWMARK = 76.0;
+    public static final double HIGHMARK = 180.0;
+
+    // STATISTICS
+    public static final double STATS_TARGET_LOW_MMOL = 3.9;
+    public static final double STATS_TARGET_HIGH_MMOL = 7.8;
+    public static final double STATS_RANGE_LOW_MMOL = 3.9;
+    public static final double STATS_RANGE_HIGH_MMOL = 10.0;
+
+
 }

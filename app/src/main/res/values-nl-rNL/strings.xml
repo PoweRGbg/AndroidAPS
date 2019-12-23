@@ -376,10 +376,11 @@
     <string name="button1">Knop 1</string>
     <string name="button2">Knop 2</string>
     <string name="button3">Knop 3</string>
-    <string name="units">Eenheden:</string>
+    <string name="units_colon">Eenheden:</string>
+    <string name="units">Eenheden</string>
     <string name="mgdl">mg/dl</string>
     <string name="mmol">mmol/l</string>
-    <string name="dia">DIA:</string>
+    <string name="dia">DIA</string>
     <string name="target_range">Streefdoel:</string>
     <string name="prefs_range_title">Bereik voor visualisatie</string>
     <string name="prefs_range_summary">Hoge en lage grens voor grafieken op het Overzicht en op Wear</string>
@@ -591,7 +592,7 @@
     <string name="hours">uren</string>
     <string name="overview_newtempbasal_basaltype_label">Basaal type</string>
     <string name="invalidprofile">Ongeldig profiel !!!</string>
-    <string name="profileswitch">Wisselen van profiel</string>
+    <string name="profileswitch">Profiel Wissel</string>
     <string name="careportal_pbage_label">Ouderdom batterij</string>
     <string name="careportal_pumpbatterychange">Pomp bat. wissel</string>
     <string name="ns_alarmoptions">Alarm opties</string>
@@ -1189,7 +1190,6 @@
     <string name="running_invalid_version">We hebben gedetecteerd dat je een ongeldige versie gebruikt. Loop is uitgeschakeld!</string>
     <string name="old_version">oude versie</string>
     <string name="very_old_version">zeer oude versie</string>
-    <string name="new_version_warning">Er is als sinds ten minste %1$d dagen een nieuwe versie beschikbaar! Na 60 dagen wordt de loop beperkt tot LGS, na 90 dagen zal de loop worden uitgeschakeld</string>
     <string name="twohours">2u</string>
     <string name="formatinsulinunits">%1$.2fE</string>
     <string name="dexcom_app_patched">Dexcom App (patched)</string>
@@ -1391,6 +1391,9 @@
     <string name="format_percent">%1$d%%</string>
     <string name="boluswizard">Bolus wizard</string>
     <string name="unit_minute_short">min</string>
+    <string name="profile_name">Profielnaam:</string>
+    <string name="selected_profile">Geselecteerd:</string>
+    <string name="unitsnosemicolon">Eenheden</string>
     <string name="format_carbs">%1$dg</string>
     <string name="common_on">Aan</string>
     <string name="common_off">Uit</string>
@@ -1398,4 +1401,13 @@
     <string name="objectives_button_unstart">Wissen gestart</string>
     <string name="timedetection">Tijd detectie</string>
     <string name="doyouwantresetstart">Wil je dit leerdoel opnieuw starten? Je kunt je voortgang verliezen.</string>
+    <string name="nopumpselected">Geen pomp geselecteerd</string>
+    <string name="setupwizard_units_prompt">Selecteer eenheden waarin je waarden wilt weergeven</string>
+    <string name="ns_ploadlocalprofile">Upload lokale profielwijzigingen naar NS</string>
+    <string name="dia_short">DIA</string>
+    <string name="ic_short">KH ratio</string>
+    <string name="isf_short">ISF</string>
+    <string name="clone_label">Dupliceren</string>
+    <string name="deletecurrentprofile">Huidige profiel verwijderen?</string>
+    <string name="reorder_label">Sorteren</string>
 </resources>

@@ -3,6 +3,7 @@ package info.nightscout.androidaps.db;
 import android.content.Context;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+
 import androidx.annotation.Nullable;
 
 import com.j256.ormlite.android.apptools.OrmLiteSqliteOpenHelper;
@@ -772,8 +773,8 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
             TempTarget tempTarget = new TempTarget()
                     .date(trJson.getLong("mills"))
                     .duration(JsonHelper.safeGetInt(trJson, "duration"))
-                    .low(Profile.toMgdl(trJson.getDouble("targetBottom"), units))
-                    .high(Profile.toMgdl(trJson.getDouble("targetTop"), units))
+                    .low(Profile.toMgdl(JsonHelper.safeGetDouble(trJson, "targetBottom"), units))
+                    .high(Profile.toMgdl(JsonHelper.safeGetDouble(trJson, "targetTop"), units))
                     .reason(JsonHelper.safeGetString(trJson, "reason", ""))
                     ._id(trJson.getString("_id"))
                     .source(Source.NIGHTSCOUT);
@@ -1592,20 +1593,50 @@ public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
     // ---------------- ProfileSwitch handling ---------------
 
-    public List<ProfileSwitch> getProfileSwitchData(boolean ascending) {
+    public List<ProfileSwitch> getProfileSwitchData(long from, boolean ascending) {
         try {
             Dao<ProfileSwitch, Long> daoProfileSwitch = getDaoProfileSwitch();
             List<ProfileSwitch> profileSwitches;
             QueryBuilder<ProfileSwitch, Long> queryBuilder = daoProfileSwitch.queryBuilder();
             queryBuilder.orderBy("date", ascending);
             queryBuilder.limit(100L);
+            Where where = queryBuilder.where();
+            where.ge("date", from);
             PreparedQuery<ProfileSwitch> preparedQuery = queryBuilder.prepare();
             profileSwitches = daoProfileSwitch.query(preparedQuery);
+            //add last one without duration
+            ProfileSwitch last = getLastProfileSwitchWithoutDuration();
+            if (last != null) {
+                if (!profileSwitches.contains(last))
+                    profileSwitches.add(last);
+            }
             return profileSwitches;
         } catch (SQLException e) {
             log.error("Unhandled exception", e);
         }
         return new ArrayList<>();
+    }
+
+    @Nullable
+    private ProfileSwitch getLastProfileSwitchWithoutDuration() {
+        try {
+            Dao<ProfileSwitch, Long> daoProfileSwitch = getDaoProfileSwitch();
+            List<ProfileSwitch> profileSwitches;
+            QueryBuilder<ProfileSwitch, Long> queryBuilder = daoProfileSwitch.queryBuilder();
+            queryBuilder.orderBy("date", false);
+            queryBuilder.limit(1L);
+            Where where = queryBuilder.where();
+            where.eq("durationInMinutes", 0);
+            PreparedQuery<ProfileSwitch> preparedQuery = queryBuilder.prepare();
+            profileSwitches = daoProfileSwitch.query(preparedQuery);
+            if (profileSwitches.size() > 0)
+                return profileSwitches.get(0);
+            else
+                return null;
+        } catch (SQLException e) {
+            log.error("Unhandled exception", e);
+        }
+        return null;
     }
 
     public List<ProfileSwitch> getProfileSwitchEventsFromTime(long mills, boolean ascending) {

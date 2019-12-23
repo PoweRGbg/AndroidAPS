@@ -1,16 +1,15 @@
 package info.nightscout.androidaps.plugins.general.careportal.Dialogs;
 
 
-import android.app.Activity;
 import android.os.Bundle;
-import androidx.fragment.app.DialogFragment;
-import androidx.appcompat.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -20,9 +19,11 @@ import android.widget.RadioButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatDialogFragment;
+import androidx.fragment.app.DialogFragment;
+
 import com.google.common.collect.Lists;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
-import com.wdullaer.materialdatetimepicker.time.RadialPickerLayout;
 import com.wdullaer.materialdatetimepicker.time.TimePickerDialog;
 
 import org.json.JSONException;
@@ -39,37 +40,34 @@ import java.util.List;
 import info.nightscout.androidaps.Constants;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.data.ProfileStore;
 import info.nightscout.androidaps.db.BgReading;
 import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.db.ProfileSwitch;
-import info.nightscout.androidaps.db.Source;
-import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.careportal.OptionsToShow;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.GlucoseStatus;
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.DefaultValueHelper;
 import info.nightscout.androidaps.utils.HardLimits;
 import info.nightscout.androidaps.utils.JsonHelper;
 import info.nightscout.androidaps.utils.NumberPicker;
+import info.nightscout.androidaps.utils.OKDialog;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.SafeParse;
 import info.nightscout.androidaps.utils.Translator;
 
-public class NewNSTreatmentDialog extends DialogFragment implements View.OnClickListener, DatePickerDialog.OnDateSetListener, TimePickerDialog.OnTimeSetListener {
+public class NewNSTreatmentDialog extends AppCompatDialogFragment implements View.OnClickListener, DatePickerDialog.OnDateSetListener, TimePickerDialog.OnTimeSetListener {
     private static Logger log = LoggerFactory.getLogger(NewNSTreatmentDialog.class);
-
-    private Activity context;
 
     private static OptionsToShow options;
     private static String event;
 
-    Profile profile;
+    private Profile profile;
     public ProfileStore profileStore;
 
     TextView eventTypeText;
@@ -106,9 +104,10 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
 
     private static Integer seconds = null;
 
-    public void setOptions(OptionsToShow options, int event) {
+    public NewNSTreatmentDialog setOptions(OptionsToShow options, int event) {
         this.options = options;
         this.event = MainApp.gs(event);
+        return this;
     }
 
     public NewNSTreatmentDialog() {
@@ -120,22 +119,13 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        context = activity;
-        super.onAttach(activity);
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        this.context = null;
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         if (options == null) return null;
-        getDialog().setTitle(MainApp.gs(options.eventName));
+        getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
+        getDialog().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+        setCancelable(true);
+        getDialog().setCanceledOnTouchOutside(false);
         setStyle(DialogFragment.STYLE_NORMAL, getTheme());
         View view = inflater.inflate(R.layout.careportal_newnstreatment_dialog, container, false);
 
@@ -213,16 +203,15 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
                 boolean erase = false;
 
                 String units = ProfileFunctions.getSystemUnits();
-                DefaultValueHelper helper = new DefaultValueHelper();
                 if (MainApp.gs(R.string.eatingsoon).equals(reasonList.get(position))) {
-                    defaultDuration = helper.determineEatingSoonTTDuration();
-                    defaultTarget = helper.determineEatingSoonTT();
+                    defaultDuration = DefaultValueHelper.determineEatingSoonTTDuration();
+                    defaultTarget = DefaultValueHelper.determineEatingSoonTT();
                 } else if (MainApp.gs(R.string.activity).equals(reasonList.get(position))) {
-                    defaultDuration = helper.determineActivityTTDuration();
-                    defaultTarget = helper.determineActivityTT();
+                    defaultDuration = DefaultValueHelper.determineActivityTTDuration();
+                    defaultTarget = DefaultValueHelper.determineActivityTT();
                 } else if (MainApp.gs(R.string.hypo).equals(reasonList.get(position))) {
-                    defaultDuration = helper.determineHypoTTDuration();
-                    defaultTarget = helper.determineHypoTT();
+                    defaultDuration = DefaultValueHelper.determineHypoTTDuration();
+                    defaultTarget = DefaultValueHelper.determineHypoTT();
                 } else if (editDuration.getValue() != 0) {
                     defaultDuration = editDuration.getValue();
                 } else {
@@ -408,6 +397,13 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        getDialog().getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+
+    }
+
+    @Override
     public void onClick(View view) {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(eventTime);
@@ -421,18 +417,18 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
                 );
                 dpd.setThemeDark(true);
                 dpd.dismissOnPause(true);
-                dpd.show(context.getFragmentManager(), "Datepickerdialog");
+                dpd.show(getActivity().getSupportFragmentManager(), "Datepickerdialog");
                 break;
             case R.id.careportal_newnstreatment_eventtime:
                 TimePickerDialog tpd = TimePickerDialog.newInstance(
                         this,
                         calendar.get(Calendar.HOUR_OF_DAY),
                         calendar.get(Calendar.MINUTE),
-                        DateFormat.is24HourFormat(context)
+                        DateFormat.is24HourFormat(getContext())
                 );
                 tpd.setThemeDark(true);
                 tpd.dismissOnPause(true);
-                tpd.show(context.getFragmentManager(), "Timepickerdialog");
+                tpd.show(getActivity().getSupportFragmentManager(), "Timepickerdialog");
                 break;
             case R.id.ok:
                 confirmNSTreatmentCreation();
@@ -469,14 +465,13 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
     }
 
     @Override
-    public void onTimeSet(RadialPickerLayout view, int hourOfDay, int minute, int second) {
+    public void onTimeSet(TimePickerDialog view, int hourOfDay, int minute, int second) {
         eventTime.setHours(hourOfDay);
         eventTime.setMinutes(minute);
         eventTime.setSeconds(this.seconds++); // randomize seconds to prevent creating record of the same time, if user choose time manually
         timeButton.setText(DateUtil.timeString(eventTime));
         updateBGforDateTime();
     }
-
 
     JSONObject gatherData() {
         String enteredBy = SP.getString("careportal_enteredby", "");
@@ -599,12 +594,12 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
 
     String buildConfirmText(JSONObject data) {
         String ret = "";
-        if (data.has("eventType")) {
-            ret += MainApp.gs(R.string.careportal_newnstreatment_eventtype);
-            ret += ": ";
-            ret += Translator.translate(JsonHelper.safeGetString(data, "eventType", ""));
-            ret += "\n";
-        }
+//        if (data.has("eventType")) {
+//            ret += MainApp.gs(R.string.careportal_newnstreatment_eventtype);
+//            ret += ": ";
+//            ret += Translator.translate(JsonHelper.safeGetString(data, "eventType", ""));
+//            ret += "\n";
+//        }
         if (data.has("glucose")) {
             ret += MainApp.gs(R.string.treatments_wizard_bg_label);
             ret += ": ";
@@ -686,7 +681,7 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
             ret += "\n";
         }
         if (data.has("created_at")) {
-            ret += MainApp.gs(R.string.careportal_newnstreatment_eventtime_label);
+            ret += MainApp.gs(R.string.event_time_label);
             ret += ": ";
             ret += eventTime.toLocaleString();
             ret += "\n";
@@ -701,60 +696,25 @@ public class NewNSTreatmentDialog extends DialogFragment implements View.OnClick
         return ret;
     }
 
-    void confirmNSTreatmentCreation() {
-        if (context != null) {
-            final JSONObject data = gatherData();
-            final String confirmText = buildConfirmText(data);
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-            builder.setTitle(MainApp.gs(R.string.confirmation));
-            builder.setMessage(confirmText);
-            builder.setPositiveButton(MainApp.gs(R.string.ok), (dialog, id) -> createNSTreatment(data));
-            builder.setNegativeButton(MainApp.gs(R.string.cancel), null);
-            builder.show();
-        }
+    private void confirmNSTreatmentCreation() {
+        final JSONObject data = gatherData();
+        OKDialog.showConfirmation(getContext(), Translator.translate(JsonHelper.safeGetString(data, "eventType", MainApp.gs(R.string.overview_treatment_label))), buildConfirmText(data), () -> createNSTreatment(data));
     }
 
 
-    public void createNSTreatment(JSONObject data) {
-        if (options.executeProfileSwitch) {
-            if (data.has("profile")) {
-                ProfileFunctions.doProfileSwitch(profileStore, JsonHelper.safeGetString(data, "profile"), JsonHelper.safeGetInt(data, "duration"), JsonHelper.safeGetInt(data, "percentage"), JsonHelper.safeGetInt(data, "timeshift"));
-            }
-        } else if (options.executeTempTarget) {
-            final int duration = JsonHelper.safeGetInt(data, "duration");
-            final double targetBottom = JsonHelper.safeGetDouble(data, "targetBottom");
-            final double targetTop = JsonHelper.safeGetDouble(data, "targetTop");
-            final String reason = JsonHelper.safeGetString(data, "reason", "");
-            if ((targetBottom != 0d && targetTop != 0d) || duration == 0) {
-                TempTarget tempTarget = new TempTarget()
-                        .date(eventTime.getTime())
-                        .duration(duration)
-                        .reason(reason)
-                        .source(Source.USER);
-                if (tempTarget.durationInMinutes != 0) {
-                    tempTarget.low(Profile.toMgdl(targetBottom, ProfileFunctions.getSystemUnits()))
-                            .high(Profile.toMgdl(targetTop, ProfileFunctions.getSystemUnits()));
-                } else {
-                    tempTarget.low(0).high(0);
-                }
-                TreatmentsPlugin.getPlugin().addToHistoryTempTarget(tempTarget);
-            }
-            if (duration == 10)
-                SP.putBoolean(R.string.key_objectiveusetemptarget, true);
+    void createNSTreatment(JSONObject data) {
+        if (JsonHelper.safeGetString(data, "eventType", "").equals(CareportalEvent.PROFILESWITCH)) {
+            ProfileSwitch profileSwitch = ProfileFunctions.prepareProfileSwitch(
+                    profileStore,
+                    JsonHelper.safeGetString(data, "profile"),
+                    JsonHelper.safeGetInt(data, "duration"),
+                    JsonHelper.safeGetInt(data, "percentage"),
+                    JsonHelper.safeGetInt(data, "timeshift"),
+                    eventTime.getTime()
+            );
+            NSUpload.uploadProfileSwitch(profileSwitch);
         } else {
-            if (JsonHelper.safeGetString(data, "eventType").equals(CareportalEvent.PROFILESWITCH)) {
-                ProfileSwitch profileSwitch = ProfileFunctions.prepareProfileSwitch(
-                        profileStore,
-                        JsonHelper.safeGetString(data, "profile"),
-                        JsonHelper.safeGetInt(data, "duration"),
-                        JsonHelper.safeGetInt(data, "percentage"),
-                        JsonHelper.safeGetInt(data, "timeshift"),
-                        eventTime.getTime()
-                );
-                NSUpload.uploadProfileSwitch(profileSwitch);
-            } else {
-                NSUpload.uploadCareportalEntryToNS(data);
-            }
+            NSUpload.uploadCareportalEntryToNS(data);
         }
     }
 

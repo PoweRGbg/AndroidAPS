@@ -15,6 +15,7 @@ import com.j256.ormlite.android.apptools.OpenHelperManager;
 
 import net.danlew.android.joda.JodaTimeAndroid;
 
+import org.json.JSONException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import info.nightscout.androidaps.data.ConstraintChecker;
+import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.DatabaseHelper;
 import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginType;
@@ -32,6 +34,7 @@ import info.nightscout.androidaps.plugins.aps.openAPSAMA.OpenAPSAMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSMA.OpenAPSMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSSMB.OpenAPSSMBPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
+import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.constraints.dstHelper.DstHelperPlugin;
 import info.nightscout.androidaps.plugins.constraints.objectives.ObjectivesPlugin;
 import info.nightscout.androidaps.plugins.constraints.safety.SafetyPlugin;
@@ -46,8 +49,6 @@ import info.nightscout.androidaps.plugins.general.maintenance.LoggerUtils;
 import info.nightscout.androidaps.plugins.general.maintenance.MaintenancePlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSClientPlugin;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
-import info.nightscout.androidaps.plugins.general.nsclient.receivers.AckAlarmReceiver;
-import info.nightscout.androidaps.plugins.general.nsclient.receivers.DBAccessReceiver;
 import info.nightscout.androidaps.plugins.general.overview.OverviewPlugin;
 import info.nightscout.androidaps.plugins.general.persistentNotification.PersistentNotificationPlugin;
 import info.nightscout.androidaps.plugins.general.smsCommunicator.SmsCommunicatorPlugin;
@@ -72,6 +73,7 @@ import info.nightscout.androidaps.plugins.sensitivity.SensitivityAAPSPlugin;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityOref0Plugin;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityOref1Plugin;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityWeightedAveragePlugin;
+import info.nightscout.androidaps.plugins.source.RandomBgPlugin;
 import info.nightscout.androidaps.plugins.source.SourceDexcomPlugin;
 import info.nightscout.androidaps.plugins.source.SourceEversensePlugin;
 import info.nightscout.androidaps.plugins.source.SourceGlimpPlugin;
@@ -86,8 +88,10 @@ import info.nightscout.androidaps.receivers.KeepAliveReceiver;
 import info.nightscout.androidaps.receivers.NSAlarmReceiver;
 import info.nightscout.androidaps.receivers.TimeDateOrTZChangeReceiver;
 import info.nightscout.androidaps.services.Intents;
+import info.nightscout.androidaps.utils.ActivityMonitor;
 import info.nightscout.androidaps.utils.FabricPrivacy;
 import info.nightscout.androidaps.utils.LocaleHelper;
+import info.nightscout.androidaps.utils.SP;
 import io.fabric.sdk.android.Fabric;
 
 import static info.nightscout.androidaps.plugins.constraints.versionChecker.VersionCheckerUtilsKt.triggerCheckVersion;
@@ -109,8 +113,6 @@ public class MainApp extends Application {
 
     private static DataReceiver dataReceiver = new DataReceiver();
     private static NSAlarmReceiver alarmReciever = new NSAlarmReceiver();
-    private static AckAlarmReceiver ackAlarmReciever = new AckAlarmReceiver();
-    private static DBAccessReceiver dbAccessReciever = new DBAccessReceiver();
     private LocalBroadcastManager lbm;
     BroadcastReceiver btReceiver;
     TimeDateOrTZChangeReceiver timeDateOrTZChangeReceiver;
@@ -144,6 +146,8 @@ public class MainApp extends Application {
         } catch (Exception e) {
             log.error("Error with Fabric init! " + e);
         }
+
+        registerActivityLifecycleCallbacks(ActivityMonitor.INSTANCE);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         mFirebaseAnalytics.setAnalyticsCollectionEnabled(!Boolean.getBoolean("disableFirebase"));
@@ -209,6 +213,7 @@ public class MainApp extends Application {
             pluginsList.add(SourcePoctechPlugin.getPlugin());
             pluginsList.add(SourceTomatoPlugin.getPlugin());
             pluginsList.add(SourceEversensePlugin.getPlugin());
+            pluginsList.add(RandomBgPlugin.INSTANCE);
             if (!Config.NSCLIENT) pluginsList.add(SmsCommunicatorPlugin.INSTANCE);
             pluginsList.add(FoodPlugin.getPlugin());
 
@@ -238,7 +243,34 @@ public class MainApp extends Application {
                 startKeepAliveService();
             }).start();
         }
+
+        doMigrations();
     }
+
+    private void doMigrations() {
+
+        // guarantee that the unreachable threshold is at least 30 and of type String
+        // Added in 1.57 at 21.01.2018
+        int unreachable_threshold = SP.getInt(R.string.key_pump_unreachable_threshold, 30);
+        SP.remove(R.string.key_pump_unreachable_threshold);
+        if (unreachable_threshold < 30) unreachable_threshold = 30;
+        SP.putString(R.string.key_pump_unreachable_threshold, Integer.toString(unreachable_threshold));
+
+        // 2.5 -> 2.6
+        if (!SP.contains(R.string.key_units)) {
+            String newUnits = Constants.MGDL;
+            Profile p = ProfileFunctions.getInstance().getProfile();
+            if (p != null && p.getData() != null && p.getData().has("units")) {
+                try {
+                    newUnits = p.getData().getString("units");
+                } catch (JSONException e) {
+                    log.error("Unhandled exception", e);
+                }
+            }
+            SP.putString(R.string.key_units, newUnits);
+        }
+    }
+
 
     private void registerLocalBroadcastReceiver() {
         lbm = LocalBroadcastManager.getInstance(this);
@@ -260,12 +292,6 @@ public class MainApp extends Application {
         lbm.registerReceiver(alarmReciever, new IntentFilter(Intents.ACTION_ANNOUNCEMENT));
         lbm.registerReceiver(alarmReciever, new IntentFilter(Intents.ACTION_CLEAR_ALARM));
         lbm.registerReceiver(alarmReciever, new IntentFilter(Intents.ACTION_URGENT_ALARM));
-
-        //register ack alarm
-        lbm.registerReceiver(ackAlarmReciever, new IntentFilter(Intents.ACTION_ACK_ALARM));
-
-        //register dbaccess
-        lbm.registerReceiver(dbAccessReciever, new IntentFilter(Intents.ACTION_DATABASE));
 
         this.timeDateOrTZChangeReceiver = new TimeDateOrTZChangeReceiver();
         this.timeDateOrTZChangeReceiver.registerBroadcasts(this);
@@ -430,7 +456,7 @@ public class MainApp extends Application {
         if (timeDateOrTZChangeReceiver != null) {
             unregisterReceiver(timeDateOrTZChangeReceiver);
         }
-
+        unregisterActivityLifecycleCallbacks(ActivityMonitor.INSTANCE);
     }
 
     public static int dpToPx(int dp) {

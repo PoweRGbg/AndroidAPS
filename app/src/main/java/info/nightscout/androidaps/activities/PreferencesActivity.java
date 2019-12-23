@@ -1,5 +1,6 @@
 package info.nightscout.androidaps.activities;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -47,6 +48,7 @@ import info.nightscout.androidaps.plugins.sensitivity.SensitivityOref0Plugin;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityOref1Plugin;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityWeightedAveragePlugin;
 import info.nightscout.androidaps.plugins.source.SourceDexcomPlugin;
+import info.nightscout.androidaps.utils.LocaleHelper;
 import info.nightscout.androidaps.utils.OKDialog;
 import info.nightscout.androidaps.utils.SP;
 import info.nightscout.androidaps.utils.SafeParse;
@@ -67,6 +69,11 @@ public class PreferencesActivity extends PreferenceActivity implements SharedPre
     }
 
     @Override
+    public void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.INSTANCE.wrap(newBase));
+    }
+
+    @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         RxBus.INSTANCE.send(new EventPreferenceChange(key));
         if (key.equals(MainApp.gs(R.string.key_language))) {
@@ -82,7 +89,7 @@ public class PreferencesActivity extends PreferenceActivity implements SharedPre
             return;
         }
         if (key.equals(MainApp.gs(R.string.key_openapsama_useautosens)) && SP.getBoolean(R.string.key_openapsama_useautosens, false)) {
-            OKDialog.show(this, MainApp.gs(R.string.configbuilder_sensitivity), MainApp.gs(R.string.sensitivity_warning), null);
+            OKDialog.show(this, MainApp.gs(R.string.configbuilder_sensitivity), MainApp.gs(R.string.sensitivity_warning));
         }
         updatePrefSummary(myPreferenceFragment.findPreference(key));
     }
@@ -122,7 +129,8 @@ public class PreferencesActivity extends PreferenceActivity implements SharedPre
                 }
             }
         }
-        adjustUnitDependentPrefs(pref);
+        if (pref != null)
+            adjustUnitDependentPrefs(pref);
     }
 
     public static void initSummary(Preference p) {
