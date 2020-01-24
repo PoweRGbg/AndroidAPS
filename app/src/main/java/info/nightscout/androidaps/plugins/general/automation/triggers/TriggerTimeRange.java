@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 
 import info.nightscout.androidaps.MainApp;
@@ -36,12 +37,14 @@ public class TriggerTimeRange extends Trigger {
     // in minutes since midnight 60 means 1AM
     private int start;
     private int end;
-    long timeZoneOffset = DateUtil.getTimeZoneOffsetMs();
+    long timeZoneOffset = (Calendar.DST_OFFSET - Calendar.ZONE_OFFSET)*60*60*1000;
 
     public TriggerTimeRange() {
-
-        start = getMinSinceMidnight(DateUtil.now());
-        end = getMinSinceMidnight(DateUtil.now());
+        Calendar calendar = DateUtil.gregorianCalendar();
+        calendar.set(Calendar.MONTH, 0);
+        calendar.setTimeInMillis(System.currentTimeMillis());
+        start = (calendar.get(Calendar.HOUR_OF_DAY) * 60) + calendar.get(Calendar.MINUTE);
+        end = (calendar.get(Calendar.HOUR_OF_DAY) * 60) + calendar.get(Calendar.MINUTE);
     }
 
     private TriggerTimeRange(TriggerTimeRange triggerTimeRange) {
@@ -53,7 +56,8 @@ public class TriggerTimeRange extends Trigger {
 
     @Override
     public boolean shouldRun() {
-        int currentMinSinceMidnight = getMinSinceMidnight(DateUtil.now());
+        log.debug("shouldRun() at date "+new Date(System.currentTimeMillis()));
+        int currentMinSinceMidnight = getMinSinceMidnight(System.currentTimeMillis());
 
         if (lastRun > DateUtil.now() - T.mins(5).msecs())
             return false;
@@ -149,10 +153,18 @@ public class TriggerTimeRange extends Trigger {
 
     public int getMinSinceMidnight(long time) {
         // if passed argument is smaller than 1440 ( 24 h * 60 min ) that value is already converted
-        if (0 < time && time < 1441)
+        if (0 <= time && time < 1441)
             return (int) time;
-        Calendar calendar = DateUtil.gregorianCalendar();
+
+        GregorianCalendar calendar = new GregorianCalendar();
         calendar.setTimeInMillis(time);
+        /*int offset = (calendar.get(Calendar.DST_OFFSET) - calendar.get(Calendar.ZONE_OFFSET));
+        log.debug("Asking to get minutes for "+calendar.getTime());
+        log.debug("hourOfDay is: "+calendar.get(Calendar.HOUR_OF_DAY));
+        log.debug("minute is: "+calendar.get(Calendar.MINUTE));
+        log.debug("Offset: "+(calendar.get(Calendar.DST_OFFSET) - calendar.get(Calendar.ZONE_OFFSET)));
+        log.debug("Returning "+(calendar.get(Calendar.HOUR_OF_DAY)*60 + calendar.get(Calendar.MINUTE)));
+        */
         return (calendar.get(Calendar.HOUR_OF_DAY) * 60) + calendar.get(Calendar.MINUTE);
     }
 
@@ -183,7 +195,7 @@ public class TriggerTimeRange extends Trigger {
                     (view12, hourOfDay, minute, second) -> {
                         calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
                         calendar.set(Calendar.MINUTE, minute);
-                        start = getMinSinceMidnight(calendar.getTimeInMillis());
+                        start = hourOfDay * 60 + minute;
                         startButton.setText(DateUtil.timeString(toMilis(start) - timeZoneOffset));
                     },
                     calendar.get(Calendar.HOUR_OF_DAY),
@@ -203,7 +215,7 @@ public class TriggerTimeRange extends Trigger {
                     (view12, hourOfDay, minute, second) -> {
                         calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
                         calendar.set(Calendar.MINUTE, minute);
-                        end = getMinSinceMidnight(calendar.getTimeInMillis());
+                        end = hourOfDay * 60 + minute;
                         endButton.setText(MainApp.gs(R.string.and) + " " + DateUtil.timeString(toMilis(end) - timeZoneOffset));
                     },
                     calendar.get(Calendar.HOUR_OF_DAY),
