@@ -56,10 +56,6 @@ public class DataService extends IntentService {
 
         boolean acceptNSData = !SP.getBoolean(R.string.key_ns_upload_only, false);
         Bundle bundles = intent.getExtras();
-        if (bundles != null && bundles.containsKey("islocal")) {
-            acceptNSData = acceptNSData || bundles.getBoolean("islocal");
-        }
-
 
         final String action = intent.getAction();
         if (Intents.ACTION_NEW_BG_ESTIMATE.equals(action)) {
@@ -103,7 +99,7 @@ public class DataService extends IntentService {
         ) {
             handleNewDataFromNSClient(intent);
         } else if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equals(action)) {
-            SmsCommunicatorPlugin.getPlugin().handleNewData(intent);
+            SmsCommunicatorPlugin.INSTANCE.handleNewData(intent);
         }
 
         if (L.isEnabled(L.DATASERVICE))
