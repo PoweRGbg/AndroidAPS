@@ -209,7 +209,8 @@ object AutomationPlugin : PluginBase(PluginDescription()
                 ActionNotification(),
                 ActionProfileSwitchPercent(),
                 ActionProfileSwitch(),
-                ActionSendSMS()
+                ActionSendSMS(),
+                ActionStartTimer()
         )
     }
 
