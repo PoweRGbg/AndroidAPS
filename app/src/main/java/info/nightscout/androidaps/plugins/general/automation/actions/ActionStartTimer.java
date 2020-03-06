@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.PumpEnactResult;
+import info.nightscout.androidaps.plugins.general.automation.AutomationPlugin;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputDuration;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputString;
 import info.nightscout.androidaps.plugins.general.automation.elements.LabelWithElement;
@@ -29,12 +30,12 @@ public class ActionStartTimer extends Action {
 
     @Override
     public int friendlyName() {
-        return R.string.notification;
+        return R.string.timer_message;
     }
 
     @Override
     public String shortDescription() {
-        return MainApp.gs(R.string.clock_message, timerName.getValue());
+        return MainApp.gs(R.string.timer_message, timerName.getValue());
     }
 
     @Override
@@ -86,11 +87,30 @@ public class ActionStartTimer extends Action {
 
     @Override
     public void generateDialog(LinearLayout root) {
-
         new LayoutBuilder()
-                .add(new LabelWithElement(MainApp.gs(R.string.message_short), "", timerName))
+                .add(new LabelWithElement(MainApp.gs(R.string.trigger_timer_name), "", timerName))
                 .add(new LabelWithElement(MainApp.gs(R.string.careportal_newnstreatment_duration_min_label), "", timerDuration))
                 .build(root);
+    }
+
+    public String getTimerName(){
+        return this.timerName.getValue();
+    }
+
+    public boolean timerExists(){
+        return false;
+    }
+
+    public ActionStartTimer fromAction(String data) {
+        try {
+            JSONObject o = new JSONObject(data);
+            timerName.setValue(JsonHelper.safeGetString(o, "name"));
+            timerDuration.setMinutes(JsonHelper.safeGetInt(o, "duration"));
+            timerStartedAt = JsonHelper.safeGetLong(o, "startedAt");
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        return this;
     }
 
 }

@@ -1382,6 +1382,7 @@
 
     <string name="notification">Notification</string>
     <string name="notification_message">Notification: %1$s</string>
+    <string name="timer_message">Start timer: %1$s</string>
     <string name="message_short">Msg:</string>
     <string name="profilepercentage">Profile percentage</string>
     <string name="percent_u">Percent [%]:</string>
@@ -1698,5 +1699,7 @@
     <string name="loop_smbexecution_time_label">SMB execution time</string>
     <string name="loop_tbrrequest_time_label">Temp basal request time</string>
     <string name="loop_tbrexecution_time_label">Temp basal execution time</string>
+    <string name="trigger_timer_label">Timer value is</string>
+    <string name="trigger_timer_name">Timer name </string>
 
 </resources>

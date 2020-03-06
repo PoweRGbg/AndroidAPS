@@ -30,6 +30,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.collections.ArrayList
 
 object AutomationPlugin : PluginBase(PluginDescription()
         .mainType(PluginType.GENERAL)
@@ -198,6 +199,26 @@ object AutomationPlugin : PluginBase(PluginDescription()
         storeToSP() // save last run time
     }
 
+    @Synchronized
+    public fun getTimers(): ArrayList<String> {
+        val names = ArrayList<String>()
+
+        for (event in automationEvents) {
+                val actions = event.actions
+                for (action in actions) {
+                    if ( action.javaClass.name == "info.nightscout.androidaps.plugins.general.automation.actions.ActionStartTimer") {
+                        val json = JSONObject(action.toJSON())
+                        val data = json.getJSONObject("data")
+                        log.debug("Real name is : "+ data.getString("name"))
+                        if(data.getString("name") != "")
+                            names.add(data.getString("name"))
+                    }
+                }
+        }
+        log.debug("Array names :" + names.size)
+        return names
+    }
+
     fun getActionDummyObjects(): List<Action> {
         return listOf(
                 //ActionLoopDisable(),
@@ -217,6 +238,7 @@ object AutomationPlugin : PluginBase(PluginDescription()
     fun getTriggerDummyObjects(): List<Trigger> {
         return listOf(
                 TriggerTime(),
+                TriggerTimer(),
                 TriggerRecurringTime(),
                 TriggerTimeRange(),
                 TriggerBg(),
