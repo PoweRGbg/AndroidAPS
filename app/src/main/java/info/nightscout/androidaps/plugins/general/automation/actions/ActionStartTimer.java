@@ -13,10 +13,12 @@ import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.PumpEnactResult;
 import info.nightscout.androidaps.plugins.general.automation.AutomationPlugin;
+import info.nightscout.androidaps.plugins.general.automation.elements.ComparatorExists;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputDuration;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputString;
 import info.nightscout.androidaps.plugins.general.automation.elements.LabelWithElement;
 import info.nightscout.androidaps.plugins.general.automation.elements.LayoutBuilder;
+import info.nightscout.androidaps.plugins.general.automation.triggers.TriggerTimer;
 import info.nightscout.androidaps.queue.Callback;
 import info.nightscout.androidaps.utils.JsonHelper;
 
@@ -27,6 +29,9 @@ public class ActionStartTimer extends Action {
     InputDuration timerDuration = new InputDuration(0, InputDuration.TimeUnit.MINUTES);
     Long timerStartedAt = 0l;
 
+    public ActionStartTimer() {
+        precondition = new TriggerTimer().comparatorExists(ComparatorExists.Compare.NOT_EXISTS);
+    }
 
     @Override
     public int friendlyName() {
@@ -35,7 +40,7 @@ public class ActionStartTimer extends Action {
 
     @Override
     public String shortDescription() {
-        return MainApp.gs(R.string.timer_message, timerName.getValue());
+        return MainApp.gs(R.string.timer_message_name, timerName.getValue());
     }
 
     @Override
@@ -71,7 +76,10 @@ public class ActionStartTimer extends Action {
     public Action fromJSON(String data) {
         try {
             JSONObject o = new JSONObject(data);
-            timerName.setValue(JsonHelper.safeGetString(o, "name"));
+            String timerNameString = JsonHelper.safeGetString(o, "name");
+            if (timerNameString == "")
+                timerNameString = MainApp.gs(R.string.name_your_timer);
+            timerName.setValue(timerNameString);
             timerDuration.setMinutes(JsonHelper.safeGetInt(o, "duration"));
             timerStartedAt = JsonHelper.safeGetLong(o, "startedAt");
         } catch (JSONException e) {
@@ -91,26 +99,6 @@ public class ActionStartTimer extends Action {
                 .add(new LabelWithElement(MainApp.gs(R.string.trigger_timer_name), "", timerName))
                 .add(new LabelWithElement(MainApp.gs(R.string.careportal_newnstreatment_duration_min_label), "", timerDuration))
                 .build(root);
-    }
-
-    public String getTimerName(){
-        return this.timerName.getValue();
-    }
-
-    public boolean timerExists(){
-        return false;
-    }
-
-    public ActionStartTimer fromAction(String data) {
-        try {
-            JSONObject o = new JSONObject(data);
-            timerName.setValue(JsonHelper.safeGetString(o, "name"));
-            timerDuration.setMinutes(JsonHelper.safeGetInt(o, "duration"));
-            timerStartedAt = JsonHelper.safeGetLong(o, "startedAt");
-        } catch (JSONException e) {
-            log.error("Unhandled exception", e);
-        }
-        return this;
     }
 
 }

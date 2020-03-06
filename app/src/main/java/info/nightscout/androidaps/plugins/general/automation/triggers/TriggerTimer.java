@@ -18,8 +18,8 @@ import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.general.automation.AutomationPlugin;
-import info.nightscout.androidaps.plugins.general.automation.actions.ActionStartTimer;
 import info.nightscout.androidaps.plugins.general.automation.elements.Comparator;
+import info.nightscout.androidaps.plugins.general.automation.elements.ComparatorExists;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputDuration;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputString;
 import info.nightscout.androidaps.plugins.general.automation.elements.LabelWithElement;
@@ -35,6 +35,7 @@ public class TriggerTimer extends Trigger {
     private static Logger log = LoggerFactory.getLogger(L.AUTOMATION);
 
     private Comparator comparator = new Comparator();
+    private ComparatorExists comparatorExists = new ComparatorExists();
     private InputString timerName = new InputString();
     private InputDuration timerDuration = new InputDuration(0, InputDuration.TimeUnit.MINUTES);
     private Dropdown timersDropdown;
@@ -62,7 +63,7 @@ public class TriggerTimer extends Trigger {
         if (lastRun > DateUtil.now() - T.mins(5).msecs())
             return false;
 
-        boolean doRun = comparator.getValue().check((timerDuration.getMinutes() * 60 * 1000L), System.currentTimeMillis());
+        boolean doRun = (comparator.getValue().check((timerDuration.getMinutes() * 60 * 1000L), System.currentTimeMillis()) && comparatorExists.getValue() == ComparatorExists.Compare.NOT_EXISTS);
         if (doRun) {
             if (L.isEnabled(L.AUTOMATION))
                 log.debug("Ready for execution: " + friendlyDescription());
@@ -123,8 +124,8 @@ public class TriggerTimer extends Trigger {
         return this;
     }
 
-    public TriggerTimer comparator(Comparator.Compare compare) {
-        this.comparator = new Comparator().setValue(compare);
+    public TriggerTimer comparatorExists(ComparatorExists.Compare compare) {
+        this.comparatorExists = new ComparatorExists().setValue(compare);
         return this;
     }
 
