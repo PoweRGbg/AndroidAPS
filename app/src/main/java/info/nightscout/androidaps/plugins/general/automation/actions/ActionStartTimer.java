@@ -9,6 +9,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Date;
+
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.PumpEnactResult;
@@ -29,12 +32,12 @@ public class ActionStartTimer extends Action {
     InputDuration timerDuration = new InputDuration(0, InputDuration.TimeUnit.MINUTES);
     Long timerStartedAt = 0l;
 
-    public ActionStartTimer() {
-        precondition = new TriggerTimer().comparatorExists(ComparatorExists.Compare.NOT_EXISTS);
-    }
-
     @Override
     public int friendlyName() {
+        return R.string.timer_message;
+    }
+
+    public int friendlyDescription() {
         return R.string.timer_message;
     }
 
@@ -45,6 +48,17 @@ public class ActionStartTimer extends Action {
 
     @Override
     public void doAction(Callback callback) {
+        ActionStartTimer timer = AutomationPlugin.INSTANCE.getTimer(timerName.getValue());
+        long whenWillExpire = this.timerStartedAt.longValue()+(this.timerDuration.getMinutes()*60*1000L);
+        log.debug("Timer to start is named "+timerName.getValue());
+        log.debug("Started : "+new Date(this.timerStartedAt).toString());
+        log.debug("Duration : "+this.timerDuration.getMinutes());
+        log.debug("Timed out: " + (whenWillExpire < System.currentTimeMillis()));
+        if(timer.timerName.getValue() == this.timerName.getValue()){
+            log.debug("Timer exists!");
+            return;
+        }
+
         timerStartedAt = System.currentTimeMillis();
         if (callback != null)
             callback.result(new PumpEnactResult().success(true).comment(R.string.ok)).run();
