@@ -219,6 +219,25 @@ object AutomationPlugin : PluginBase(PluginDescription()
         return names
     }
 
+    public fun getTimer(reqName:String): ActionStartTimer {
+        val timer = ActionStartTimer();
+
+        for (event in automationEvents) {
+            val actions = event.actions
+            for (action in actions) {
+                if ( action.javaClass.name == "info.nightscout.androidaps.plugins.general.automation.actions.ActionStartTimer") {
+                    val json = JSONObject(action.toJSON())
+                    val data = json.getJSONObject("data")
+                    if(data.getString("name") == reqName) {
+                        timer.fromJSON(data.toString())
+                    }
+
+                }
+            }
+        }
+        return timer
+    }
+
     fun getActionDummyObjects(): List<Action> {
         return listOf(
                 //ActionLoopDisable(),
