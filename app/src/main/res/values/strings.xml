@@ -1382,8 +1382,6 @@
 
     <string name="notification">Notification</string>
     <string name="notification_message">Notification: %1$s</string>
-    <string name="timer_message">Start timer</string>
-    <string name="timer_message_name">Start timer %1$s</string>
     <string name="message_short">Msg:</string>
     <string name="profilepercentage">Profile percentage</string>
     <string name="percent_u">Percent [%]:</string>
@@ -1703,5 +1701,9 @@
     <string name="trigger_timer_label">Timer value is</string>
     <string name="trigger_timer_name">Timer name </string>
     <string name="name_your_timer">Name this timer! </string>
+    <string name="timer_message">Start timer</string>
+    <string name="timer_friendly_description">Timer is started</string>
+    <string name="timer_message_name">Start timer %1$s</string>
+    <string name="timer_friendly_name">Timer %1$s %2$s</string>
 
 </resources>

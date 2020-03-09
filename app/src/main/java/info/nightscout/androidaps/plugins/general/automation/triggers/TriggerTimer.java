@@ -18,6 +18,7 @@ import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.general.automation.AutomationPlugin;
+import info.nightscout.androidaps.plugins.general.automation.actions.ActionStartTimer;
 import info.nightscout.androidaps.plugins.general.automation.elements.Comparator;
 import info.nightscout.androidaps.plugins.general.automation.elements.ComparatorExists;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputDuration;
@@ -35,7 +36,6 @@ public class TriggerTimer extends Trigger {
     private static Logger log = LoggerFactory.getLogger(L.AUTOMATION);
 
     private Comparator comparator = new Comparator();
-    private ComparatorExists comparatorExists = new ComparatorExists();
     private InputString timerName = new InputString();
     private InputDuration timerDuration = new InputDuration(0, InputDuration.TimeUnit.MINUTES);
     private Dropdown timersDropdown;
@@ -58,12 +58,14 @@ public class TriggerTimer extends Trigger {
 
     @Override
     public synchronized boolean shouldRun() {
-        TempTarget tt = TreatmentsPlugin.getPlugin().getTempTargetFromHistory();
 
-        if (lastRun > DateUtil.now() - T.mins(5).msecs())
+        if (lastRun > DateUtil.now() - T.mins(1).msecs())
             return false;
 
-        boolean doRun = (comparator.getValue().check((timerDuration.getMinutes() * 60 * 1000L), System.currentTimeMillis()) && comparatorExists.getValue() == ComparatorExists.Compare.NOT_EXISTS);
+        log.debug("timerDuration is "+ timerDuration.getMinutes());
+        log.debug("timerName is "+ timerName.getValue());
+
+        boolean doRun = (comparator.getValue().check((timerDuration.getMinutes() * 60 * 1000L), System.currentTimeMillis()));
         if (doRun) {
             if (L.isEnabled(L.AUTOMATION))
                 log.debug("Ready for execution: " + friendlyDescription());
@@ -101,12 +103,12 @@ public class TriggerTimer extends Trigger {
 
     @Override
     public int friendlyName() {
-        return R.string.trigger_timer_label;
+        return R.string.timer_friendly_description;
     }
 
     @Override
     public String friendlyDescription() {
-        return MainApp.gs(R.string.trigger_timer_label, MainApp.gs(comparator.getValue().getStringRes()));
+        return MainApp.gs(R.string.timer_friendly_name, timerName.getValue(), MainApp.gs(comparator.getValue().getStringRes()));
     }
 
     @Override
@@ -124,11 +126,6 @@ public class TriggerTimer extends Trigger {
         return this;
     }
 
-    public TriggerTimer comparatorExists(ComparatorExists.Compare compare) {
-        this.comparatorExists = new ComparatorExists().setValue(compare);
-        return this;
-    }
-
     @Override
     public void generateDialog(LinearLayout root, FragmentManager fragmentManager) {
         ArrayList<String> timerNames = AutomationPlugin.INSTANCE.getTimers();
@@ -142,7 +139,7 @@ public class TriggerTimer extends Trigger {
                     .build(root);
         } else {
             new LayoutBuilder()
-                    .add(new StaticLabel(R.string.careportal_temporarytarget))
+                    .add(new StaticLabel(R.string.timer_message))
                     .add(new LabelWithElement(MainApp.gs(R.string.trigger_timer_name) + ": ", "", timerName))
                     .add(comparator)
                     .add(new LabelWithElement(MainApp.gs(R.string.unit_minutes), "", timerDuration))
