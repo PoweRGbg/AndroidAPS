@@ -35,6 +35,7 @@ import info.nightscout.androidaps.plugins.bus.RxBus;
 import info.nightscout.androidaps.plugins.general.nsclient.data.AlarmAck;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSAlarm;
 import info.nightscout.androidaps.plugins.general.nsclient.events.EventNSClientNewLog;
+import info.nightscout.androidaps.plugins.general.nsclient.events.EventNSClientRestart;
 import info.nightscout.androidaps.plugins.general.nsclient.events.EventNSClientStatus;
 import info.nightscout.androidaps.plugins.general.nsclient.events.EventNSClientUpdateGUI;
 import info.nightscout.androidaps.plugins.general.nsclient.services.NSClientService;
@@ -98,6 +99,10 @@ public class NSClientPlugin extends PluginBase {
     }
 
     public boolean isAllowed() {
+        boolean wasAllowed = nsClientReceiverDelegate.allowed;
+        nsClientReceiverDelegate.processStateChange();
+        if (wasAllowed != nsClientReceiverDelegate.allowed)
+            RxBus.INSTANCE.send(new EventNSClientRestart());
         return nsClientReceiverDelegate.allowed;
     }
 
