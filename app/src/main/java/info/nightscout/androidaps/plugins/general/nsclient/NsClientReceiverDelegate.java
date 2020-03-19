@@ -66,7 +66,7 @@ class NsClientReceiverDelegate {
         }
     }
 
-    private void processStateChange() {
+    void processStateChange() {
         boolean newAllowedState = allowedChargingState && allowedNetworkState;
         if (newAllowedState != allowed) {
             allowed = newAllowedState;
