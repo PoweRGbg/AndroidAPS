@@ -21,7 +21,6 @@ import java.util.Set;
 
 import info.nightscout.androidaps.MainApp;
 import info.nightscout.androidaps.R;
-import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.general.automation.elements.ComparatorExists;
 import info.nightscout.androidaps.plugins.general.automation.elements.InputString;
@@ -36,7 +35,7 @@ public class TriggerBTDevice extends Trigger {
 
     private InputString deviceName = new InputString();
     private ComparatorExists comparator = new ComparatorExists();
-
+    boolean connectedToDevice = false;
     public TriggerBTDevice() {
         super();
     }
@@ -54,11 +53,13 @@ public class TriggerBTDevice extends Trigger {
 
     @Override
     public synchronized boolean shouldRun() {
+        connectedToDevice = false;
         checkConnected();
+        log.debug("Connected "+connectedToDevice+" left "+ T.msecs(DateUtil.now()-lastRun).mins());
         if (lastRun > DateUtil.now() - T.mins(5).msecs())
             return false;
 
-        if (devicePaired(deviceName.getValue()) && comparator.getValue() == ComparatorExists.Compare.EXISTS) {
+        if (connectedToDevice && comparator.getValue() == ComparatorExists.Compare.EXISTS) {
             if (L.isEnabled(L.AUTOMATION))
                 log.debug("Ready for execution: " + friendlyDescription());
             return true;
@@ -136,43 +137,38 @@ public class TriggerBTDevice extends Trigger {
                 .build(root);
     }
 
-    public boolean devicePaired(String name){
+    // Get the list of paired BT devices to use in dropdown menu
+    public List<String> devicePaired(String name){
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        if (mBluetoothAdapter == null)
-            return false;
-        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-        boolean isBonded = false;
         List<String> s = new ArrayList<String>();
+        if (mBluetoothAdapter == null)
+            return s;
+        Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
+
         for(BluetoothDevice bt : pairedDevices) {
             s.add(bt.getName());
-            log.debug("Device name is: "+bt.getName());
-            if (bt.getName().equals(name))
-                isBonded = true;
+//            log.debug("Device name is: "+bt.getName());
         }
-        return isBonded;
+        return s;
     }
 
     public void checkConnected() {
+        connectedToDevice = false; // reset connection status
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         if (mBluetoothAdapter == null)
             return; // No BT enabled or available
 
         int state = BluetoothAdapter.getDefaultAdapter().getProfileConnectionState(BluetoothProfile.HEADSET);
-        final int[] states = new int[] {BluetoothProfile.STATE_CONNECTED, BluetoothProfile.STATE_CONNECTING};
         if (state != BluetoothProfile.STATE_CONNECTED) {
             return;
         }
         try
         {
             Context context = MainApp.instance().getApplicationContext();
-            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.A2DP);
-            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.GATT);
-            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.GATT_SERVER);
-            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.HEADSET);
-            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.HEALTH);
-            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.SAP);
+            log.debug("Connected before "+connectedToDevice);
+            BluetoothAdapter.getDefaultAdapter().getProfileProxy(context, serviceListener, BluetoothProfile.STATE_CONNECTED);
+            log.debug("Connected after "+connectedToDevice);
         }
         catch (Exception e)
         {
@@ -193,7 +189,10 @@ public class TriggerBTDevice extends Trigger {
             for (BluetoothDevice device : proxy.getConnectedDevices())
             {
                 log.debug("onServiceConnected" + "|" + device.getName() + "| " + device.getAddress() + " | " + proxy.getConnectionState(device) + "(connected = "
-                        + BluetoothProfile.STATE_CONNECTED + ") | Profile "+profile+"| Proxy "+proxy);
+                        + BluetoothProfile.STATE_CONNECTED +") | Profile "+profile+"| Proxy "+proxy);
+                log.debug("Required: " +deviceName.getValue());
+                log.debug("Names match: " +(deviceName.getValue().equals(device.getName())));
+                connectedToDevice = deviceName.getValue().equals(device.getName());
             }
 
             BluetoothAdapter.getDefaultAdapter().closeProfileProxy(profile, proxy);
