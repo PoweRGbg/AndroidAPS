@@ -54,10 +54,11 @@ public class TriggerBTDevice extends Trigger {
 
     @Override
     public synchronized boolean shouldRun() {
-        checkConnected();
         log.debug("Connected "+connectedToDevice+"! Time left "+ (5 - T.msecs(DateUtil.now()-lastRun).mins()));
         if (lastRun > DateUtil.now() - T.mins(5).msecs())
             return false;
+
+        checkConnected();
 
         if (connectedToDevice && comparator.getValue() == ComparatorExists.Compare.EXISTS) {
             if (L.isEnabled(L.AUTOMATION))
