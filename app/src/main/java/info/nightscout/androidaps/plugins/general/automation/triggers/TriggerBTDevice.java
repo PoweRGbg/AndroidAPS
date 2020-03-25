@@ -80,10 +80,10 @@ public class TriggerBTDevice extends Trigger {
             JSONObject data = new JSONObject();
             data.put("lastRun", lastRun);
             data.put("comparator", comparator.getValue().toString());
-            if (listOfDevices.getValue() != null && listOfDevices.getValue().equals(""))
-                data.put("name", listOfDevices.getValue());
-            else
+            if (!deviceName.getValue().equals(""))
                 data.put("name", deviceName.getValue());
+            else
+                data.put("name", listOfDevices.getValue());
 
             o.put("data", data);
         } catch (JSONException e) {
