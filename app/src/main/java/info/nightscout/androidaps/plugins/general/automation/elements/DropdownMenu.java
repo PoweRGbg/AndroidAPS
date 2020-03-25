@@ -36,7 +36,6 @@ public class DropdownMenu extends Element {
     public void addToLayout(LinearLayout root) {
         if (itemList == null) {
             log.error("ItemList is empty!");
-        } else {
             itemList = new ArrayList<>();
         }
         ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(root.getContext(),
@@ -78,7 +77,19 @@ public class DropdownMenu extends Element {
     }
 
     public void setList(ArrayList<CharSequence> values){
-        itemList = values;
+        if (itemList == null)
+            itemList = new ArrayList<>();
+        log.debug("values size is "+values.size());
+        itemList = new ArrayList<>(values);
+        log.debug("items size is "+itemList.size());
+    }
+
+    // For testing only
+    public void add(String item){
+        if (itemList == null)
+            itemList = new ArrayList<>();
+        itemList.add(item);
+        log.debug("Added " + item + "("+itemList.size()+")");
     }
 
 }

@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import info.nightscout.androidaps.MainApp;
@@ -26,6 +25,7 @@ import info.nightscout.androidaps.plugins.general.automation.elements.Comparator
 import info.nightscout.androidaps.plugins.general.automation.elements.InputString;
 import info.nightscout.androidaps.plugins.general.automation.elements.LayoutBuilder;
 import info.nightscout.androidaps.plugins.general.automation.elements.StaticLabel;
+import info.nightscout.androidaps.plugins.general.automation.elements.DropdownMenu;
 import info.nightscout.androidaps.utils.DateUtil;
 import info.nightscout.androidaps.utils.JsonHelper;
 import info.nightscout.androidaps.utils.T;
@@ -34,8 +34,10 @@ public class TriggerBTDevice extends Trigger {
     private static Logger log = LoggerFactory.getLogger(L.AUTOMATION);
 
     private InputString deviceName = new InputString();
+    private DropdownMenu listOfDevices = new DropdownMenu("");
     private ComparatorExists comparator = new ComparatorExists();
-    boolean connectedToDevice = false;
+    private boolean connectedToDevice = false;
+
     public TriggerBTDevice() {
         super();
     }
@@ -45,6 +47,7 @@ public class TriggerBTDevice extends Trigger {
         deviceName.setValue(TriggerBTDevice.deviceName.getValue());
         comparator = new ComparatorExists(TriggerBTDevice.comparator);
         connectedToDevice = TriggerBTDevice.connectedToDevice;
+        listOfDevices.setList(devicesPaired());
         lastRun = TriggerBTDevice.lastRun;
     }
 
@@ -77,12 +80,16 @@ public class TriggerBTDevice extends Trigger {
             JSONObject data = new JSONObject();
             data.put("lastRun", lastRun);
             data.put("comparator", comparator.getValue().toString());
-            data.put("name", deviceName.getValue());
+            if (listOfDevices.getValue() != null && listOfDevices.getValue().equals(""))
+                data.put("name", listOfDevices.getValue());
+            else
+                data.put("name", deviceName.getValue());
 
             o.put("data", data);
         } catch (JSONException e) {
             log.error("Unhandled exception", e);
         }
+        log.debug("JSON saved "+o.toString());
         return o.toString();
     }
 
@@ -92,6 +99,7 @@ public class TriggerBTDevice extends Trigger {
             JSONObject d = new JSONObject(data);
             lastRun = JsonHelper.safeGetLong(d, "lastRun");
             deviceName.setValue(JsonHelper.safeGetString(d, "name"));
+            listOfDevices.setList(devicesPaired());
             comparator.setValue(ComparatorExists.Compare.valueOf(JsonHelper.safeGetString(d, "comparator")));
         } catch (Exception e) {
             log.error("Unhandled exception", e);
@@ -106,7 +114,7 @@ public class TriggerBTDevice extends Trigger {
 
     @Override
     public String friendlyDescription() {
-        return MainApp.gs(R.string.btdevicecompared, MainApp.gs(comparator.getValue().getStringRes()));
+        return MainApp.gs(R.string.btdevicecompared, deviceName.getValue(), MainApp.gs(comparator.getValue().getStringRes()));
     }
 
     @Override
@@ -131,17 +139,28 @@ public class TriggerBTDevice extends Trigger {
 
     @Override
     public void generateDialog(LinearLayout root, FragmentManager fragmentManager) {
-        new LayoutBuilder()
-                .add(new StaticLabel(R.string.btdevice))
-                .add(deviceName)
-                .add(comparator)
-                .build(root);
+        ArrayList<CharSequence> pairedDevices = devicesPaired();
+        if (pairedDevices.size() == 0) {
+            // No list of paired devices comming from BT adapter -> show a text input
+            new LayoutBuilder()
+                    .add(new StaticLabel(R.string.btdevice))
+                    .add(deviceName)
+                    .add(comparator)
+                    .build(root);
+        } else {
+            listOfDevices.setList(pairedDevices);
+            new LayoutBuilder()
+                    .add(new StaticLabel(R.string.btdevice))
+                    .add(listOfDevices)
+                    .add(comparator)
+                    .build(root);
+        }
     }
 
     // Get the list of paired BT devices to use in dropdown menu
-    public List<String> devicePaired(String name){
+    private ArrayList<CharSequence> devicesPaired(){
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        List<String> s = new ArrayList<String>();
+        ArrayList<CharSequence> s = new ArrayList<>();
         if (mBluetoothAdapter == null)
             return s;
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
@@ -152,7 +171,7 @@ public class TriggerBTDevice extends Trigger {
         return s;
     }
 
-    public void checkConnected() {
+    private void checkConnected() {
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         if (mBluetoothAdapter == null)
