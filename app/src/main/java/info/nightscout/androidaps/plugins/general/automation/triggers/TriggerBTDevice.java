@@ -34,8 +34,8 @@ public class TriggerBTDevice extends Trigger {
     private static Logger log = LoggerFactory.getLogger(L.AUTOMATION);
 
     private InputString deviceName = new InputString();
-    private DropdownMenu listOfDevices = new DropdownMenu("");
-    private ComparatorExists comparator = new ComparatorExists();
+    DropdownMenu listOfDevices = new DropdownMenu("");
+    ComparatorExists comparator = new ComparatorExists();
     private boolean connectedToDevice = false;
 
     public TriggerBTDevice() {
@@ -119,7 +119,7 @@ public class TriggerBTDevice extends Trigger {
 
     @Override
     public Optional<Integer> icon() {
-        return Optional.of(R.drawable.ic_keyboard_tab);
+        return Optional.of(R.drawable.ic_bluetooth_white_48dp);
     }
 
     @Override
@@ -171,7 +171,7 @@ public class TriggerBTDevice extends Trigger {
         return s;
     }
 
-    private void checkConnected() {
+    public void checkConnected() {
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         if (mBluetoothAdapter == null)
@@ -211,5 +211,17 @@ public class TriggerBTDevice extends Trigger {
             BluetoothAdapter.getDefaultAdapter().closeProfileProxy(profile, proxy);
         }
     };
+
+    public void setDeviceName(String newName) {
+        deviceName.setValue(newName);
+    }
+
+    public String getDeviceName() {
+        return deviceName.getValue();
+    }
+
+    public void setConnectedState(boolean newstate){
+        this.connectedToDevice = newstate;
+    }
 
 }
