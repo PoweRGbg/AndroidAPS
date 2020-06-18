@@ -122,8 +122,9 @@ class CarbsDialog : DialogFragmentWithDate() {
             validateInputs()
         }
 
+        val tempTarget = treatmentsPlugin.tempTargetFromHistory
         iobCobCalculatorPlugin.actualBg()?.let { bgReading ->
-            if (bgReading.value < 72)
+            if (bgReading.value < 72 && tempTarget != null)
                 overview_carbs_hypo_tt.isChecked = true
         }
         overview_carbs_hypo_tt.setOnClickListener {
