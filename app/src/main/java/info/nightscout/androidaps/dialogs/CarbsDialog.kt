@@ -15,13 +15,17 @@ import info.nightscout.androidaps.db.CareportalEvent
 import info.nightscout.androidaps.db.Source
 import info.nightscout.androidaps.db.TempTarget
 import info.nightscout.androidaps.interfaces.Constraint
-import info.nightscout.androidaps.plugins.configBuilder.ConstraintChecker
 import info.nightscout.androidaps.interfaces.ProfileFunction
+import info.nightscout.androidaps.plugins.configBuilder.ConstraintChecker
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.IobCobCalculatorPlugin
 import info.nightscout.androidaps.plugins.treatments.CarbsGenerator
 import info.nightscout.androidaps.plugins.treatments.TreatmentsPlugin
-import info.nightscout.androidaps.utils.*
+import info.nightscout.androidaps.utils.DateUtil
+import info.nightscout.androidaps.utils.DecimalFormatter
+import info.nightscout.androidaps.utils.DefaultValueHelper
+import info.nightscout.androidaps.utils.HtmlHelper
+import info.nightscout.androidaps.utils.ToastUtils
 import info.nightscout.androidaps.utils.alertDialogs.OKDialog
 import info.nightscout.androidaps.utils.resources.ResourceHelper
 import kotlinx.android.synthetic.main.dialog_carbs.*
@@ -122,9 +126,16 @@ class CarbsDialog : DialogFragmentWithDate() {
             validateInputs()
         }
 
-        val tempTarget = treatmentsPlugin.tempTargetFromHistory
+        var lowTTRunning = false
+        val tempTarget = treatmentsPlugin.tempTargetFromHistory?.target()
+        val units = profileFunction.getUnits()
+        var multiplier = 1
+        if (units == Constants.MMOL) multiplier = 18
+        if (tempTarget != null && tempTarget >= defaultValueHelper.determineHypoTT() * multiplier)
+            lowTTRunning = true
+
         iobCobCalculatorPlugin.actualBg()?.let { bgReading ->
-            if (bgReading.value < 72 && tempTarget != null)
+            if (bgReading.value < 72 && lowTTRunning != true)
                 overview_carbs_hypo_tt.isChecked = true
         }
         overview_carbs_hypo_tt.setOnClickListener {
