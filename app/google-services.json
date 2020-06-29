@@ -1,121 +1,42 @@
 {
   "project_info": {
-    "project_number": "477603612366",
-    "firebase_url": "https://androidaps-c34f8.firebaseio.com",
-    "project_id": "androidaps-c34f8",
-    "storage_bucket": "androidaps-c34f8.appspot.com"
+    "project_number": "389182993762",
+    "firebase_url": "https://androidapscurves.firebaseio.com",
+    "project_id": "androidapscurves",
+    "storage_bucket": "androidapscurves.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:477603612366:android:aef229914e3e5448",
-        "android_client_info": {
-          "package_name": "info.nightscout.aapspumpcontrol"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDcZpDRMaGjdhihXp531cVYM6LkEL8KbgM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:477603612366:android:efc956f55b281623",
+        "mobilesdk_app_id": "1:389182993762:android:c29f631272b3503bc2e83b",
         "android_client_info": {
           "package_name": "info.nightscout.androidaps"
         }
       },
       "oauth_client": [
         {
-          "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
+          "client_id": "389182993762-32env8im5con0cqp0iotco5og76fvn7g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "info.nightscout.androidaps",
+            "certificate_hash": "e932947d708500d2ee2d48565cce6b16773acd7b"
+          }
+        },
+        {
+          "client_id": "389182993762-cpt2hudv3k0md0svi80jaia4052kv01v.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDcZpDRMaGjdhihXp531cVYM6LkEL8KbgM"
+          "current_key": "AIzaSyANeI4uhLTx2pE95qy-5U7TvLYmpvrIuxU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:477603612366:android:b38d6e7351f73cc0",
-        "android_client_info": {
-          "package_name": "info.nightscout.nsclient"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDcZpDRMaGjdhihXp531cVYM6LkEL8KbgM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:477603612366:android:2dc8cf3acd3332e7",
-        "android_client_info": {
-          "package_name": "info.nightscout.nsclient2"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDcZpDRMaGjdhihXp531cVYM6LkEL8KbgM"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "477603612366-a925drvlvs7qn7gt73r585erbqto8c79.apps.googleusercontent.com",
+              "client_id": "389182993762-cpt2hudv3k0md0svi80jaia4052kv01v.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -331,7 +331,7 @@ public class HistoryBrowseActivity extends NoSplashAppCompatActivity {
             if (showCob)
                 secondGraphData.addCob(fromTime, toTime, useCobForScale, useCobForScale ? 1d : 0.5d);
             if (showDev)
-                secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d);
+                secondGraphData.addDeviations(fromTime, toTime, useDevForScale, 1d, null);
             if (showRat)
                 secondGraphData.addRatio(fromTime, toTime, useRatioForScale, 1d);
             if (showActSec)

@@ -77,6 +77,7 @@ public class L {
 
     public static final String CORE = "CORE";
     public static final String AUTOSENS = "AUTOSENS";
+    public static final String CARBS = "CARBS";
     public static final String AUTOMATION = "AUTOMATION";
     public static final String EVENTS = "EVENTS";
     public static final String GLUCOSE = "GLUCOSE";
@@ -100,6 +101,7 @@ public class L {
     public static final String UI = "UI";
     public static final String LOCATION = "LOCATION";
     public static final String SMS = "SMS";
+    public static final String FITBIT = "FITBIT";
 
     private static void initialize() {
         logElements = new ArrayList<>();

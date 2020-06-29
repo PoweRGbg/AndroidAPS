@@ -40,6 +40,7 @@ import com.jjoe64.graphview.series.BaseSeries;
 import java.util.Iterator;
 
 import info.nightscout.androidaps.MainApp;
+import info.nightscout.androidaps.db.CareportalEvent;
 
 // Added by Rumen for scalable text
 
@@ -77,6 +78,7 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
         ANNOUNCEMENT,
         OPENAPSOFFLINE,
         EXERCISE,
+        HEARTRATE,
         GENERAL,
         GENERALWITHDURATION,
         COBFAILOVER,
@@ -318,6 +320,12 @@ public class PointsWithLabelGraphSeries<E extends DataPointWithLabelInterface> e
                         mPaint.setStrokeWidth(5);
                         canvas.drawRect(px - 3, bounds.top + py - 3, xpluslength + 3, bounds.bottom + py + 3, mPaint);
                     }
+                } else if (value.getShape() == Shape.HEARTRATE) {
+                    CareportalEvent castvalue = (CareportalEvent)value;
+                    float py = graphTop;
+                    mPaint.setStrokeWidth(5);
+                    float cal = castvalue.getCalories();
+                    canvas.drawRect(endX, graphTop, endX+1, graphTop + (cal*2), mPaint);
                 } else if (value.getShape() == Shape.OPENAPSOFFLINE && value.getDuration() != 0) {
                     mPaint.setStrokeWidth(0);
                     if (value.getLabel() != null) {

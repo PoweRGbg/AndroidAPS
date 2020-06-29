@@ -326,7 +326,7 @@ public class GraphData {
         List<CareportalEvent> careportalEvents = MainApp.getDbHelper().getCareportalEventsFromTime(fromTime - 6 * 60 * 60 * 1000, true);
 
         for (int tx = 0; tx < careportalEvents.size(); tx++) {
-            DataPointWithLabelInterface t = careportalEvents.get(tx);
+            CareportalEvent t = careportalEvents.get(tx);
             if (t.getX() + t.getDuration() < fromTime || t.getX() > endTime) continue;
             t.setY(getNearestBg((long) t.getX()));
             filteredTreatments.add(t);
@@ -532,7 +532,7 @@ public class GraphData {
     }
 
     // scale in % of vertical size (like 0.3)
-    public void addDeviations(long fromTime, long toTime, boolean useForScale, double scale) {
+    public void addDeviations(long fromTime, long toTime, boolean useForScale, double scale, double[] predicatedDeviations) {
         class DeviationDataPoint extends ScaledDataPoint {
             public int color;
 
@@ -547,7 +547,8 @@ public class GraphData {
         Double maxDevValueFound = 0d;
         Scale devScale = new Scale();
 
-        for (long time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
+        long time;
+        for (time = fromTime; time <= toTime; time += 5 * 60 * 1000L) {
             AutosensData autosensData = iobCobCalculatorPlugin.getAutosensData(time);
             if (autosensData != null) {
                 int color = MainApp.gc(R.color.deviationblack); // "="
@@ -565,6 +566,13 @@ public class GraphData {
                 }
                 devArray.add(new DeviationDataPoint(time, autosensData.deviation, color, devScale));
                 maxDevValueFound = Math.max(maxDevValueFound, Math.abs(autosensData.deviation));
+            }
+        }
+
+        if (predicatedDeviations != null) {
+            for(int i = 0; i < predicatedDeviations.length; ++i) {
+                devArray.add(new DeviationDataPoint(time + (i * 5 * 60 * 1000L), predicatedDeviations[i], MainApp.gc(R.color.deviationpredication), devScale));
+                maxDevValueFound = Math.max(maxDevValueFound, Math.abs(predicatedDeviations[i]));
             }
         }
 

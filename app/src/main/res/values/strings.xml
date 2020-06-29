@@ -194,6 +194,7 @@
     <string name="enableloop">Enable loop</string>
 
     <string name="openloop_newsuggestion">New suggestion available</string>
+    <string name="carbssuggestion">Carbs Suggestion</string>
     <string name="unsupportedclientver">Unsupported version of NSClient</string>
     <string name="unsupportednsversion">Unsupported version of Nightscout</string>
     <string name="nsclientnotinstalled">NSClient not installed. Record lost!</string>
@@ -281,6 +282,7 @@
     <string name="percent">Percent</string>
     <string name="absolute">Absolute</string>
     <string name="canceltemp">Cancel temp basal</string>
+    <string name="carbsreq">"%dg Additional Carbs Required Within %d Minutes</string>
     <string name="smscommunicator">SMS Communicator</string>
     <string name="waitingforpumpresult">Waiting for result</string>
     <string name="smscommunicator_allowednumbers">Allowed phone numbers</string>
@@ -637,6 +639,8 @@
     <string name="xdripstatus_settings">xDrip Status (watch)</string>
     <string name="xdripstatus">xDrip Statusline (watch)</string>
     <string name="xdripstatus_shortname">xds</string>
+    <string name="fitbitcontrol">Fitbit (watch)</string>
+    <string name="fitbitcontrol_shortname">fitbit</string>
     <string name="wear_showbgi_title">Show BGI</string>
     <string name="wear_showbgi_summary">Add BGI to status line</string>
     <string name="ns_noupload">No upload to NS</string>
@@ -721,10 +725,16 @@
     <string name="smb_shortname">SMB</string>
     <string name="key_use_smb" translatable="false">use_smb</string>
     <string name="key_use_uam" translatable="false">use_uam</string>
+    <string name="key_smb_enable_carbs_suggestions" translatable="false">key_smb_enable_carbs_suggestions</string>
+    <string name="key_smb_enable_carbs_suggestions_threshold" translatable="false">key_smb_enable_carbs_suggestions_threshold</string>
     <string name="enableuam">Enable UAM</string>
     <string name="enablesmb">Enable SMB</string>
+    <string name="enable_carbs_suggestions">Enable Carbs Suggestions</string>
+    <string name="enable_carbs_suggestions_threshold">Minimum Carbs Required For Suggestion</string>
+    <string name="enable_carbs_suggestions_threshold_summary">Minimum grams of carbs to display a carbs suggestion alert. Carbs suggestions below this number will not trigger a notification.</string>
     <string name="enablesmb_summary">Use Super Micro Boluses instead of temp basal for faster action</string>
     <string name="enableuam_summary">Detection of Unannounced meals</string>
+    <string name="enablecarbssuggestions_summary">Enable carbs suggestions where BG is predicted to go below threshold</string>
     <string name="key_insulin_oref_peak" translatable="false">insulin_oref_peak</string>
     <string name="insulin_oref_peak">IOB Curve Peak Time</string>
     <string name="insulin_peak_time">Peak Time [min]</string>
@@ -982,6 +992,7 @@
     <string name="profileswitch_ismissing">ProfileSwitch missing. Please do a profile switch or press \"Activate Profile\" in the LocalProfile.</string>
     <string name="combo_bolus_count">Bolus count</string>
     <string name="combo_tbr_count">TBR count</string>
+    <string name="utc_pump_time">UTC Pump Time</string>
     <string name="pumpisnottempbasalcapable">Pump is not temp basal capable</string>
     <string name="novalidbasalrate">No valid basal rate read from pump</string>
     <string name="closedmodedisabledinpreferences">Closed loop mode disabled in preferences</string>
@@ -1699,5 +1710,37 @@
     <string name="loop_tbrrequest_time_label">Temp basal request time</string>
     <string name="loop_tbrexecution_time_label">Temp basal execution time</string>
     <string name="insight_alert_notification_channel">Insight Pump Alerts</string>
+    <string name="curves_shortname">Curves</string>
+    <string name="apscurves">APS Curves</string>
+    <string name="description_curves">Experimental APS based on simulation</string>
+    <string name="pumpt_uses_utc">Pump uses UTC</string>
+    <string name="key_pump_uses_utc" translatable="false">pump_uses_utc</string>
+
+    <string name="apscurves_smb_steps_summary">How many parts to split SMB bolus into</string>
+    <string name="apscurves_smb_steps">SMB Steps</string>
+    <string name="key_apscurves_smb_steps">key_apscurves_smb_steps</string>
+    <string name="apscurves_smb_min_basal_summary">Minimum basal to use when micro-bolusing</string>
+    <string name="apscurves_smb_min_basal">Min SMB Basal</string>
+    <string name="key_apscurves_smb_min_basal">key_apscurves_smb_min_basal</string>
+
+    <string name="apscurves_smb_steps_summary_uam">How many parts to split SMB bolus into (UAM)</string>
+    <string name="apscurves_smb_steps_uam">SMB Steps (UAM)</string>
+    <string name="key_apscurves_smb_steps_uam">key_apscurves_smb_steps_uam</string>
+    <string name="apscurves_smb_min_basal_summary_uam">Minimum basal to use when micro-bolusing (UAM)</string>
+    <string name="apscurves_smb_min_basal_uam">Min SMB Basal (UAM)</string>
+    <string name="key_apscurves_smb_min_basal_uam">key_apscurves_smb_min_basal_uam</string>
+
+    <string name="description_insulin_canular_age">Base insulin curve on age of the canular</string>
+    <string name="canular_age_oref">Canular Age Oref</string>
+    <string name="exercise">Exercise</string>
+    <string name="exercise_none">None</string>
+    <string name="exercise_mild">Mild</string>
+    <string name="exercise_significant">Significant</string>
+    <string name="apscurves_resting_calories">Resting Calories Consumed</string>
+    <string name="key_apscurves_resting_calories">key_apscurves_resting_calories</string>
+    <string name="key_apscurves_carbs_to_calories">key_apscurves_carbs_to_calories</string>
+    <string name="apscurves_carbs_to_calories">1g of carbs in calories</string>
+    <string name="key_carbs_feedback_percentage">key_carbs_feedback_percentage</string>
+    <string name="carbs_feedback_percentage">Amount of carbs feedback loop to apply</string>
 
 </resources>

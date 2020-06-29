@@ -227,6 +227,7 @@ public class DataService extends IntentService {
                 eventType.equals(CareportalEvent.ANNOUNCEMENT) ||
                 eventType.equals(CareportalEvent.QUESTION) ||
                 eventType.equals(CareportalEvent.EXERCISE) ||
+                eventType.equals(CareportalEvent.HEARTRATE) ||
                 eventType.equals(CareportalEvent.OPENAPSOFFLINE) ||
                 eventType.equals(CareportalEvent.PUMPBATTERYCHANGE)) {
             MainApp.getDbHelper().createCareportalEventFromJsonIfNotExists(json);

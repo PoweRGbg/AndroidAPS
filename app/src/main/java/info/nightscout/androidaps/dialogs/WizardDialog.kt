@@ -20,6 +20,7 @@ import info.nightscout.androidaps.data.Profile
 import info.nightscout.androidaps.db.BgReading
 import info.nightscout.androidaps.db.DatabaseHelper
 import info.nightscout.androidaps.interfaces.Constraint
+import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin
 import info.nightscout.androidaps.plugins.bus.RxBus
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions
@@ -190,7 +191,7 @@ class WizardDialog : DialogFragment() {
 
     private fun loadCheckedStates() {
         treatments_wizard_bgtrendcheckbox.isChecked = SP.getBoolean(MainApp.gs(R.string.key_wizard_include_trend_bg), false)
-        treatments_wizard_cobcheckbox.isChecked = SP.getBoolean(MainApp.gs(R.string.key_wizard_include_cob), false)
+        treatments_wizard_cobcheckbox.isChecked = false //SP.getBoolean(MainApp.gs(R.string.key_wizard_include_cob), false)
     }
 
     private fun initDialog() {
@@ -226,6 +227,23 @@ class WizardDialog : DialogFragment() {
         } else {
             treatments_wizard_bg_input.value = 0.0
         }
+
+        // Pretend the current BG is the worst predicted BG for the next hour (reduce tendancy to bolus when prediction is to go low)
+        val lastRun = LoopPlugin.lastRun
+        if (lastRun != null && lastRun.constraintsProcessed != null) {
+            val predictions = lastRun.constraintsProcessed.predictedBGValues;
+            if (predictions != null && lastBg != null) {
+                var minBG = lastBg.value
+                for (i in 0..12) {
+                    minBG = Math.min(minBG, predictions[i])
+                }
+                if (units == Constants.MMOL) {
+                    minBG = minBG * Constants.MGDL_TO_MMOLL
+                }
+                treatments_wizard_bg_input.value = minBG
+            }
+        }
+
         treatments_wizard_ttcheckbox.isEnabled = TreatmentsPlugin.getPlugin().tempTargetFromHistory != null
 
         // IOB calculation

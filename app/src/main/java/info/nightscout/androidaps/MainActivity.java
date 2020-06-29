@@ -1,5 +1,6 @@
 package info.nightscout.androidaps;
 
+import android.app.backup.BackupManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;

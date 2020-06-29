@@ -3,7 +3,7 @@ package info.nightscout.androidaps.activities
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
+//import com.google.firebase.database.FirebaseDatabase
 import info.nightscout.androidaps.R
 import info.nightscout.androidaps.data.defaultProfile.DefaultProfile
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin
@@ -86,8 +86,8 @@ class SurveyActivity : NoSplashAppCompatActivity() {
                         log.debug("signInAnonymously:success")
                         // val user = auth.currentUser // TODO: do we need this, seems unused?
 
-                        val database = FirebaseDatabase.getInstance().reference
-                        database.child("survey").child(r.id).setValue(r)
+                        //val database = FirebaseDatabase.getInstance().reference
+                        //database.child("survey").child(r.id).setValue(r)
                     } else {
                         log.error("signInAnonymously:failure", task.exception)
                         ToastUtils.showToastInUiThread(this, "Authentication failed.")

@@ -13,6 +13,7 @@ import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpDescription;
 import info.nightscout.androidaps.interfaces.PumpInterface;
+import info.nightscout.androidaps.plugins.aps.apsCurves.APSCurvesPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSAMA.OpenAPSAMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSMA.OpenAPSMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSSMB.OpenAPSSMBPlugin;
@@ -241,7 +242,7 @@ public class SafetyPlugin extends PluginBase implements ConstraintsInterface {
     @Override
     public Constraint<Double> applyMaxIOBConstraints(Constraint<Double> maxIob) {
         double maxIobPref;
-        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS))
+        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS) || APSCurvesPlugin.getPlugin().isEnabled(PluginType.APS))
             maxIobPref = SP.getDouble(R.string.key_openapssmb_max_iob, 3d);
         else
             maxIobPref = SP.getDouble(R.string.key_openapsma_max_iob, 1.5d);
@@ -251,7 +252,7 @@ public class SafetyPlugin extends PluginBase implements ConstraintsInterface {
             maxIob.setIfSmaller(HardLimits.maxIobAMA(), String.format(MainApp.gs(R.string.limitingiob), HardLimits.maxIobAMA(), MainApp.gs(R.string.hardlimit)), this);
         if (OpenAPSAMAPlugin.getPlugin().isEnabled(PluginType.APS))
             maxIob.setIfSmaller(HardLimits.maxIobAMA(), String.format(MainApp.gs(R.string.limitingiob), HardLimits.maxIobAMA(), MainApp.gs(R.string.hardlimit)), this);
-        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS))
+        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS) || APSCurvesPlugin.getPlugin().isEnabled(PluginType.APS))
             maxIob.setIfSmaller(HardLimits.maxIobSMB(), String.format(MainApp.gs(R.string.limitingiob), HardLimits.maxIobSMB(), MainApp.gs(R.string.hardlimit)), this);
         return maxIob;
     }

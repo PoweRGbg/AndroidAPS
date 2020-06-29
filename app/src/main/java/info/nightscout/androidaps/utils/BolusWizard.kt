@@ -124,12 +124,16 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
             targetBGHigh = Profile.fromMgdlToUnits(tempTarget.high, ProfileFunctions.getSystemUnits())
         }
         if (useBg && bg > 0) {
-            bgDiff = when {
-                bg in targetBGLow..targetBGHigh -> 0.0
-                bg <= targetBGLow               -> bg - targetBGLow
-                else                            -> bg - targetBGHigh
+            if (bg < 3.5) {
+                insulinFromBG = -100.0
+            } else {
+                bgDiff = when {
+                    bg in targetBGLow..targetBGHigh -> 0.0
+                    bg <= targetBGLow               -> bg - targetBGLow
+                    else                            -> bg - targetBGHigh
+                }
+                insulinFromBG = bgDiff / sens
             }
-            insulinFromBG = bgDiff / sens
         }
 
         // Insulin from 15 min trend
@@ -239,6 +243,7 @@ class BolusWizard @JvmOverloads constructor(val profile: Profile,
             val pct = if (percentageCorrection != 100.0) " (" + percentageCorrection.toInt() + "%)" else ""
             confirmMessage += "<br/>" + MainApp.gs(R.string.bolus) + ": " + "<font color='" + MainApp.gc(R.color.bolus) + "'>" + DecimalFormatter.toPumpSupportedBolus(insulinAfterConstraints) + "U" + pct + "</font>"
         }
+        confirmMessage += "<br/>" + MainApp.gs(R.string.careportal_newnstreatment_notes_label) + ": " + notes
         if (carbs > 0) {
             var timeShift = ""
             if (carbTime > 0) {

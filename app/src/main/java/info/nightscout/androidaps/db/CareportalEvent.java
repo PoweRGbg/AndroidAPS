@@ -72,6 +72,8 @@ public class CareportalEvent implements DataPointWithLabelInterface, Interval {
     public static final String QUESTION = "Question";
     public static final String EXERCISE = "Exercise";
     public static final String OPENAPSOFFLINE = "OpenAPS Offline";
+    public static final String HEARTRATE = "hr-bpm";
+    public static final String CARBSCOMPLETE = "Carbs Complete";
     public static final String NONE = "<none>";
 
     public static final String MBG = "Mbg"; // comming from entries
@@ -252,6 +254,8 @@ public class CareportalEvent implements DataPointWithLabelInterface, Interval {
                 return PointsWithLabelGraphSeries.Shape.OPENAPSOFFLINE;
             case CareportalEvent.EXERCISE:
                 return PointsWithLabelGraphSeries.Shape.EXERCISE;
+            case CareportalEvent.HEARTRATE:
+                return PointsWithLabelGraphSeries.Shape.HEARTRATE;
         }
         if (getDuration() > 0)
             return PointsWithLabelGraphSeries.Shape.GENERALWITHDURATION;
@@ -292,6 +296,17 @@ public class CareportalEvent implements DataPointWithLabelInterface, Interval {
             log.error("Unhandled exception", e);
         }
         return 0;
+    }
+
+    public float getCalories() {
+        try {
+            JSONObject object = new JSONObject(json);
+            if (object.has("calories"))
+                return (float)object.getDouble("calories");
+        } catch (JSONException e) {
+            log.error("Unhandled exception", e);
+        }
+        return 0f;
     }
 
     @Override

@@ -275,6 +275,7 @@ public class LoopPlugin extends PluginBase {
 
     public synchronized void invoke(String initiator, boolean allowNotification, boolean tempBasalFallback) {
         try {
+
             if (L.isEnabled(L.APS))
                 log.debug("invoke from " + initiator);
             Constraint<Boolean> loopEnabled = MainApp.getConstraintChecker().isLoopInvokationAllowed();
@@ -372,6 +373,24 @@ public class LoopPlugin extends PluginBase {
             Constraint<Boolean> closedLoopEnabled = MainApp.getConstraintChecker().isClosedLoopAllowed();
 
             if (closedLoopEnabled.value()) {
+
+                if (allowNotification) {
+                    if (resultAfterConstraints.isCarbsRequired()) {
+                        NotificationCompat.Builder builder =
+                                new NotificationCompat.Builder(MainApp.instance().getApplicationContext(), CHANNEL_ID);
+                        builder.setSmallIcon(R.drawable.notif_icon)
+                                .setContentTitle(MainApp.gs(R.string.carbssuggestion))
+                                .setContentText(resultAfterConstraints.getCarbsRequiredText())
+                                .setAutoCancel(true)
+                                .setPriority(Notification.PRIORITY_MAX)
+                                .setCategory(Notification.CATEGORY_ALARM)
+                                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                        presentSuggestion(builder);
+                    } else {
+                        dismissSuggestion();
+                    }
+                }
+
                 if (resultAfterConstraints.isChangeRequested()
                         && !ConfigBuilderPlugin.getPlugin().getCommandQueue().bolusInQueue()
                         && !ConfigBuilderPlugin.getPlugin().getCommandQueue().isRunning(Command.CommandType.BOLUS)) {
@@ -417,49 +436,25 @@ public class LoopPlugin extends PluginBase {
                     lastRun.smbSetByPump = null;
                 }
             } else {
-                if (resultAfterConstraints.isChangeRequested() && allowNotification) {
-                    NotificationCompat.Builder builder =
-                            new NotificationCompat.Builder(MainApp.instance().getApplicationContext(), CHANNEL_ID);
-                    builder.setSmallIcon(R.drawable.notif_icon)
-                            .setContentTitle(MainApp.gs(R.string.openloop_newsuggestion))
-                            .setContentText(resultAfterConstraints.toString())
-                            .setAutoCancel(true)
-                            .setPriority(Notification.PRIORITY_HIGH)
-                            .setCategory(Notification.CATEGORY_ALARM)
-                            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-                    if (SP.getBoolean("wearcontrol", false)) {
-                        builder.setLocalOnly(true);
+
+                if (allowNotification) {
+                    if (resultAfterConstraints.isChangeRequested()) {
+                        NotificationCompat.Builder builder =
+                                new NotificationCompat.Builder(MainApp.instance().getApplicationContext(), CHANNEL_ID);
+                        builder.setSmallIcon(R.drawable.notif_icon)
+                                .setContentTitle(MainApp.gs(R.string.openloop_newsuggestion))
+                                .setContentText(resultAfterConstraints.toString())
+                                .setAutoCancel(true)
+                                .setPriority(Notification.PRIORITY_HIGH)
+                                .setCategory(Notification.CATEGORY_ALARM)
+                                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                        if (SP.getBoolean("wearcontrol", false)) {
+                            builder.setLocalOnly(true);
+                        }
+                        presentSuggestion(builder);
+                    } else {
+                        dismissSuggestion();
                     }
-
-                    // Creates an explicit intent for an Activity in your app
-                    Intent resultIntent = new Intent(MainApp.instance().getApplicationContext(), MainActivity.class);
-
-                    // The stack builder object will contain an artificial back stack for the
-                    // started Activity.
-                    // This ensures that navigating backward from the Activity leads out of
-                    // your application to the Home screen.
-                    TaskStackBuilder stackBuilder = TaskStackBuilder.create(MainApp.instance().getApplicationContext());
-                    stackBuilder.addParentStack(MainActivity.class);
-                    // Adds the Intent that starts the Activity to the top of the stack
-                    stackBuilder.addNextIntent(resultIntent);
-                    PendingIntent resultPendingIntent =
-                            stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-                    builder.setContentIntent(resultPendingIntent);
-                    builder.setVibrate(new long[]{1000, 1000, 1000, 1000, 1000});
-                    NotificationManager mNotificationManager =
-                            (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
-                    // mId allows you to update the notification later on.
-                    mNotificationManager.notify(Constants.notificationID, builder.build());
-                    RxBus.INSTANCE.send(new EventNewOpenLoopNotification());
-
-                    // Send to Wear
-                    ActionStringHandler.handleInitiate("changeRequest");
-                } else if (allowNotification) {
-                    // dismiss notifications
-                    NotificationManager notificationManager =
-                            (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
-                    notificationManager.cancel(Constants.notificationID);
-                    ActionStringHandler.handleInitiate("cancelChangeRequest");
                 }
             }
 
@@ -468,6 +463,40 @@ public class LoopPlugin extends PluginBase {
             if (L.isEnabled(L.APS))
                 log.debug("invoke end");
         }
+    }
+
+    private void presentSuggestion(NotificationCompat.Builder builder) {
+        // Creates an explicit intent for an Activity in your app
+        Intent resultIntent = new Intent(MainApp.instance().getApplicationContext(), MainActivity.class);
+
+        // The stack builder object will contain an artificial back stack for the
+        // started Activity.
+        // This ensures that navigating backward from the Activity leads out of
+        // your application to the Home screen.
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(MainApp.instance().getApplicationContext());
+        stackBuilder.addParentStack(MainActivity.class);
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent =
+                stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+        builder.setContentIntent(resultPendingIntent);
+        builder.setVibrate(new long[]{1000, 1000, 1000, 1000, 1000});
+        NotificationManager mNotificationManager =
+                (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
+        // mId allows you to update the notification later on.
+        mNotificationManager.notify(Constants.notificationID, builder.build());
+        RxBus.INSTANCE.send(new EventNewOpenLoopNotification());
+
+        // Send to Wear
+        ActionStringHandler.handleInitiate("changeRequest");
+    }
+
+    private void dismissSuggestion() {
+        // dismiss notifications
+        NotificationManager notificationManager =
+                (NotificationManager) MainApp.instance().getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(Constants.notificationID);
+        ActionStringHandler.handleInitiate("cancelChangeRequest");
     }
 
     public void acceptChangeRequest() {

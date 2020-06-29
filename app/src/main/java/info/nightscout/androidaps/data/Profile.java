@@ -141,6 +141,7 @@ public class Profile {
     }
 
     public double getDia() {
+        //return 10;
         return dia;
     }
 

@@ -229,8 +229,8 @@ public class CareportalFragment extends Fragment implements View.OnClickListener
                         double cageWarn = nsSettings.getExtendedWarnValue("cage", "warn", 48);
                         handleAge(cage, CareportalEvent.SITECHANGE, cageWarn, cageUrgent);
 
-                        double sageUrgent = nsSettings.getExtendedWarnValue("sage", "urgent", 166);
-                        double sageWarn = nsSettings.getExtendedWarnValue("sage", "warn", 164);
+                        double sageUrgent = nsSettings.getExtendedWarnValue("sage", "urgent", 239);
+                        double sageWarn = nsSettings.getExtendedWarnValue("sage", "warn", 237);
                         handleAge(sage, CareportalEvent.SENSORCHANGE, sageWarn, sageUrgent);
 
                         double pbageUrgent = nsSettings.getExtendedWarnValue("bage", "urgent", 360);

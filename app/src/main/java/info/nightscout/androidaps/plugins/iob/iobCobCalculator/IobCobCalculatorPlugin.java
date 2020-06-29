@@ -30,6 +30,7 @@ import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginDescription;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.aps.apsCurves.APSCurvesPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSSMB.OpenAPSSMBPlugin;
 import info.nightscout.androidaps.plugins.bus.RxBus;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
@@ -477,7 +478,7 @@ public class IobCobCalculatorPlugin extends PluginBase {
         }
         IobTotal bolusIob = TreatmentsPlugin.getPlugin().getCalculationToTimeTreatments(time).round();
         IobTotal basalIob = TreatmentsPlugin.getPlugin().getCalculationToTimeTempBasals(time, true, now).round();
-        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS)) {
+        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS) || APSCurvesPlugin.getPlugin().isEnabled(PluginType.APS)) {
             // Add expected zero temp basal for next 240 mins
             IobTotal basalIobWithZeroTemp = basalIob.copy();
             TemporaryBasal t = new TemporaryBasal()
@@ -504,7 +505,7 @@ public class IobCobCalculatorPlugin extends PluginBase {
 
         IobTotal bolusIob = TreatmentsPlugin.getPlugin().getCalculationToTimeTreatments(time).round();
         IobTotal basalIob = TreatmentsPlugin.getPlugin().getCalculationToTimeTempBasals(time, now, lastAutosensResult, exercise_mode, half_basal_exercise_target, isTempTarget).round();
-        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS)) {
+        if (OpenAPSSMBPlugin.getPlugin().isEnabled(PluginType.APS) || APSCurvesPlugin.getPlugin().isEnabled(PluginType.APS)) {
             // Add expected zero temp basal for next 240 mins
             IobTotal basalIobWithZeroTemp = basalIob.copy();
             TemporaryBasal t = new TemporaryBasal()
@@ -757,10 +758,10 @@ public class IobCobCalculatorPlugin extends PluginBase {
         if (L.isEnabled(L.AUTOSENS))
             log.debug("Starting calculation thread: " + from + " to " + DateUtil.dateAndTimeString(end));
         if (thread == null || thread.getState() == Thread.State.TERMINATED) {
-            if (SensitivityOref1Plugin.getPlugin().isEnabled(PluginType.SENSITIVITY))
+            //if (SensitivityOref1Plugin.getPlugin().isEnabled(PluginType.SENSITIVITY))
                 thread = new IobCobOref1Thread(this, from, end, bgDataReload, limitDataToOldestAvailable, cause);
-            else
-                thread = new IobCobThread(this, from, end, bgDataReload, limitDataToOldestAvailable, cause);
+            //else
+            //    thread = new IobCobThread(this, from, end, bgDataReload, limitDataToOldestAvailable, cause);
             thread.start();
         }
     }

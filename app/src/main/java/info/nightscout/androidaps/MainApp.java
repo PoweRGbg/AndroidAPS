@@ -14,7 +14,6 @@ import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.crashlytics.android.Crashlytics;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.j256.ormlite.android.apptools.OpenHelperManager;
 
@@ -34,6 +33,7 @@ import info.nightscout.androidaps.interfaces.PluginBase;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.interfaces.PumpInterface;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.aps.apsCurves.APSCurvesPlugin;
 import info.nightscout.androidaps.plugins.aps.loop.LoopPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSAMA.OpenAPSAMAPlugin;
 import info.nightscout.androidaps.plugins.aps.openAPSMA.OpenAPSMAPlugin;
@@ -49,6 +49,7 @@ import info.nightscout.androidaps.plugins.constraints.versionChecker.VersionChec
 import info.nightscout.androidaps.plugins.general.actions.ActionsPlugin;
 import info.nightscout.androidaps.plugins.general.automation.AutomationPlugin;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalPlugin;
+import info.nightscout.androidaps.plugins.general.fitbit.FitbitControlPlugin;
 import info.nightscout.androidaps.plugins.general.food.FoodPlugin;
 import info.nightscout.androidaps.plugins.general.maintenance.LoggerUtils;
 import info.nightscout.androidaps.plugins.general.maintenance.MaintenancePlugin;
@@ -96,10 +97,8 @@ import info.nightscout.androidaps.receivers.NetworkChangeReceiver;
 import info.nightscout.androidaps.receivers.TimeDateOrTZChangeReceiver;
 import info.nightscout.androidaps.services.Intents;
 import info.nightscout.androidaps.utils.ActivityMonitor;
-import info.nightscout.androidaps.utils.FabricPrivacy;
 import info.nightscout.androidaps.utils.LocaleHelper;
 import info.nightscout.androidaps.utils.SP;
-import io.fabric.sdk.android.Fabric;
 
 import static info.nightscout.androidaps.plugins.constraints.versionChecker.VersionCheckerUtilsKt.triggerCheckVersion;
 
@@ -134,23 +133,6 @@ public class MainApp extends Application {
         sConstraintsChecker = new ConstraintChecker();
         sDatabaseHelper = OpenHelperManager.getHelper(sInstance, DatabaseHelper.class);
 
-        Thread.setDefaultUncaughtExceptionHandler((thread, ex) -> {
-            if (ex instanceof InternalError) {
-                // usually the app trying to spawn a thread while being killed
-                return;
-            }
-
-            log.error("Uncaught exception crashing app", ex);
-        });
-
-        try {
-            if (FabricPrivacy.fabricEnabled()) {
-                Fabric.with(this, new Crashlytics());
-            }
-        } catch (Exception e) {
-            log.error("Error with Fabric init! " + e);
-        }
-
         registerActivityLifecycleCallbacks(ActivityMonitor.INSTANCE);
 
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
@@ -166,6 +148,7 @@ public class MainApp extends Application {
         File engineeringModeSemaphore = new File(extFilesDir, "engineering_mode");
 
         engineeringMode = engineeringModeSemaphore.exists() && engineeringModeSemaphore.isFile();
+        engineeringMode = true;
         devBranch = BuildConfig.VERSION.contains("-") || BuildConfig.VERSION.matches(".*[a-zA-Z]+.*");
 
         registerLocalBroadcastReceiver();
@@ -200,6 +183,7 @@ public class MainApp extends Application {
             if (Config.APS) pluginsList.add(OpenAPSMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSAMAPlugin.getPlugin());
             if (Config.APS) pluginsList.add(OpenAPSSMBPlugin.getPlugin());
+            if (Config.APS && engineeringMode) pluginsList.add(APSCurvesPlugin.getPlugin());
             pluginsList.add(NSProfilePlugin.getPlugin());
             if (!Config.NSCLIENT) pluginsList.add(LocalProfilePlugin.INSTANCE);
             pluginsList.add(TreatmentsPlugin.getPlugin());
@@ -222,6 +206,7 @@ public class MainApp extends Application {
 
             pluginsList.add(WearPlugin.initPlugin(this));
             pluginsList.add(StatuslinePlugin.initPlugin(this));
+            if (engineeringMode) pluginsList.add(FitbitControlPlugin.initPlugin(this));
             pluginsList.add(PersistentNotificationPlugin.getPlugin());
             pluginsList.add(NSClientPlugin.getPlugin());
 //            if (engineeringMode) pluginsList.add(TidepoolPlugin.INSTANCE);

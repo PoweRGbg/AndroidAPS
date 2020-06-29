@@ -106,6 +106,15 @@ class TempTargetDialog : DialogFragmentWithDate() {
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
+
+            val exerciseList: List<String> = Lists.newArrayList(
+                MainApp.gs(R.string.exercise_none),
+                MainApp.gs(R.string.exercise_mild),
+                MainApp.gs(R.string.exercise_significant)
+            )
+            val adapterExercise = ArrayAdapter(context, R.layout.spinner_centered, exerciseList)
+            overview_temptarget_exercise.adapter = adapterExercise
+
         }
     }
 

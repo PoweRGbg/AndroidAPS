@@ -91,7 +91,6 @@ import info.nightscout.androidaps.plugins.bus.RxBus;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.careportal.CareportalFragment;
-import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.general.nsclient.data.NSDeviceStatus;
 import info.nightscout.androidaps.plugins.general.overview.activities.QuickWizardListActivity;
 import info.nightscout.androidaps.plugins.general.overview.graphData.GraphData;
@@ -1475,8 +1474,12 @@ public class OverviewFragment extends Fragment implements View.OnClickListener, 
                 secondGraphData.addIob(fromTime, now, useIobForScale, 1d, SP.getBoolean("showprediction", false));
             if (SP.getBoolean("showcob", true))
                 secondGraphData.addCob(fromTime, now, useCobForScale, useCobForScale ? 1d : 0.5d);
-            if (SP.getBoolean("showdeviations", false))
-                secondGraphData.addDeviations(fromTime, now, useDevForScale, 1d);
+            if (SP.getBoolean("showdeviations", false)) {
+                double [] predicatedDeviations = null;
+                if (finalPredictionsAvailable && SP.getBoolean("showprediction", false))
+                    predicatedDeviations = apsResult.getDeviationPredictions();
+                secondGraphData.addDeviations(fromTime, now, useDevForScale, 1d, predicatedDeviations);
+            }
             if (SP.getBoolean("showratios", false))
                 secondGraphData.addRatio(fromTime, now, useRatioForScale, 1d);
             if (SP.getBoolean("showactivitysecondary", true))

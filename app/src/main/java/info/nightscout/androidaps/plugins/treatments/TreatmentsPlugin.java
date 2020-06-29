@@ -305,8 +305,13 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
                 if (t > absorptionTime_ago && t <= now) {
                     if (treatment.carbs >= 1) {
                         result.carbs += treatment.carbs;
-                        if (t > result.lastCarbTime)
+                        if (t > result.lastCarbTime) {
                             result.lastCarbTime = t;
+                        }
+                    }
+                    // TODO: carbs required to trigger pre-bolus
+                    if (treatment.carbs > 15 && t > result.lastSignificantCarbTime) {
+                        result.lastSignificantCarbTime = t;
                     }
                 }
             }
@@ -318,6 +323,7 @@ public class TreatmentsPlugin extends PluginBase implements TreatmentsInterface 
             result.slopeFromMinDeviation = autosensData.slopeFromMinDeviation;
             result.slopeFromMaxDeviation = autosensData.slopeFromMaxDeviation;
             result.usedMinCarbsImpact = autosensData.usedMinCarbsImpact;
+            result.deviation = autosensData.deviation;
         }
         result.lastBolusTime = getLastBolusTime();
         return result;

@@ -62,6 +62,7 @@ public class Treatment implements DataPointWithLabelInterface, DbObjectBase {
     public double dia = Constants.defaultDIA; // currently unused, will be used in the future
     @DatabaseField
     public String boluscalc;
+    public String notes;
 
     public Treatment() {
     }
@@ -77,6 +78,9 @@ public class Treatment implements DataPointWithLabelInterface, DbObjectBase {
         treatment.pumpId = JsonHelper.safeGetLong(json, "pumpId");
         treatment._id = json.getString("_id");
         treatment.isSMB = JsonHelper.safeGetBoolean(json,"isSMB");
+        if (json.has("notes")) {
+            treatment.notes = json.getString("notes");
+        }
         if (json.has("eventType")) {
             treatment.mealBolus = !json.get("eventType").equals("Correction Bolus");
             double carbs = treatment.carbs;
@@ -86,11 +90,19 @@ public class Treatment implements DataPointWithLabelInterface, DbObjectBase {
                 if (boluscalc.has("carbs")) {
                     carbs = Math.max(boluscalc.getDouble("carbs"), carbs);
                 }
+                if (boluscalc.has("notes")) {
+                    treatment.notes = boluscalc.getString("notes");
+                }
             }
             if (carbs <= 0)
                 treatment.mealBolus = false;
         }
         return treatment;
+    }
+
+    public void setTreatment(double insulin, long date) {
+        this.insulin = insulin;
+        this.date = date;
     }
 
     public String toString() {

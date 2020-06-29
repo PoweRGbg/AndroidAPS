@@ -28,6 +28,8 @@ import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.carbs.ActiveCarb;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.carbs.ActiveCarbFromDeviationHistory;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventIobCalculationProgress;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityAAPSPlugin;
@@ -239,7 +241,7 @@ public class IobCobThread extends Thread {
                     List<Treatment> recentCarbTreatments = TreatmentsPlugin.getPlugin().getCarbTreatments5MinBackFromHistory(bgTime);
                     for (Treatment recentCarbTreatment : recentCarbTreatments) {
                         autosensData.carbsFromBolus += recentCarbTreatment.carbs;
-                        autosensData.activeCarbsList.add(new AutosensData.CarbsInPast(recentCarbTreatment));
+                        autosensData.activeCarbsList.add(new ActiveCarbFromDeviationHistory(recentCarbTreatment));
                         autosensData.pastSensitivity += "[" + DecimalFormatter.to0Decimal(recentCarbTreatment.carbs) + "g]";
                     }
 
@@ -251,8 +253,8 @@ public class IobCobThread extends Thread {
                         if (SensitivityAAPSPlugin.getPlugin().isEnabled(PluginType.SENSITIVITY) || SensitivityWeightedAveragePlugin.getPlugin().isEnabled(PluginType.SENSITIVITY)) {
                             //when the impact depends on a max time, sum them up as smaller carb sizes make them smaller
                             for (int ii = 0; ii < autosensData.activeCarbsList.size(); ++ii) {
-                                AutosensData.CarbsInPast c = autosensData.activeCarbsList.get(ii);
-                                totalMinCarbsImpact += c.min5minCarbImpact;
+                                ActiveCarb c = autosensData.activeCarbsList.get(ii);
+                                totalMinCarbsImpact += c.get5minImpact();
                             }
                         } else {
                             //Oref sensitivity

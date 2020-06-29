@@ -21,15 +21,21 @@ import info.nightscout.androidaps.R;
 import info.nightscout.androidaps.data.IobTotal;
 import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.BgReading;
+import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.db.TempTarget;
 import info.nightscout.androidaps.events.Event;
+import info.nightscout.androidaps.interfaces.PluginBase;
+import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
 import info.nightscout.androidaps.plugins.aps.openAPSSMB.SMBDefaults;
 import info.nightscout.androidaps.plugins.bus.RxBus;
 import info.nightscout.androidaps.plugins.configBuilder.ConfigBuilderPlugin;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
+import info.nightscout.androidaps.plugins.general.fitbit.FitbitControlPlugin;
 import info.nightscout.androidaps.plugins.general.overview.events.EventNewNotification;
 import info.nightscout.androidaps.plugins.general.overview.notifications.Notification;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.carbs.ActiveCarb;
+import info.nightscout.androidaps.plugins.iob.iobCobCalculator.carbs.ActiveCarbFromDeviationHistory;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventAutosensCalculationFinished;
 import info.nightscout.androidaps.plugins.iob.iobCobCalculator.events.EventIobCalculationProgress;
 import info.nightscout.androidaps.plugins.treatments.Treatment;
@@ -240,42 +246,119 @@ public class IobCobOref1Thread extends Thread {
                     List<Treatment> recentCarbTreatments = TreatmentsPlugin.getPlugin().getCarbTreatments5MinBackFromHistory(bgTime);
                     for (Treatment recentCarbTreatment : recentCarbTreatments) {
                         autosensData.carbsFromBolus += recentCarbTreatment.carbs;
-                        autosensData.activeCarbsList.add(new AutosensData.CarbsInPast(recentCarbTreatment));
+                        autosensData.activeCarbsList.add(new ActiveCarbFromDeviationHistory(recentCarbTreatment));
                         autosensData.pastSensitivity += "[" + DecimalFormatter.to0Decimal(recentCarbTreatment.carbs) + "g]";
                     }
 
+                    ArrayList<PluginBase> pluginsList = MainApp.getSpecificPluginsList(PluginType.GENERAL);
+                    FitbitControlPlugin fitbitPlugin = null;
+                    if (pluginsList != null) {
+                        for (PluginBase p : pluginsList) {
+                            if (p.getClass() == FitbitControlPlugin.class) {
+                                fitbitPlugin = (FitbitControlPlugin)p;
+                            }
+                        }
+                    }
+
+                    autosensData.caloriesUsed = 0f;
+                    /*
+                    if (fitbitPlugin != null) {
+                        autosensData.caloriesUsed = fitbitPlugin.getCaloriesAt(bgTime);
+                    }
+                     */
+
+                    List<CareportalEvent> careportalHREvents = MainApp.getDbHelper().getCareportalEvents(CareportalEvent.HEARTRATE, bgTime - (30 * 60 * 1000), bgTime, false);
+                    if (careportalHREvents.size() > 0) {
+                        // Moving avg of up to the last 3 values (to smooth)
+                        for(CareportalEvent hrEvent : careportalHREvents) {
+                            if (hrEvent != null) {
+                                autosensData.caloriesUsed += hrEvent.getCalories();
+                            }
+                        }
+                        autosensData.caloriesUsed = autosensData.caloriesUsed / careportalHREvents.size();
+                    }
+
+                    // calories are assumed to decay to 0 over 1 hour
+                    // need to add to devation for carb absobsion and remove from the prediction
 
                     // if we are absorbing carbs
                     if (previous != null && previous.cob > 0) {
+/*
                         // calculate sum of min carb impact from all active treatments
-                        double totalMinCarbsImpact = 0d;
-//                        if (SensitivityAAPSPlugin.getPlugin().isEnabled(PluginType.SENSITIVITY) || SensitivityWeightedAveragePlugin.getPlugin().isEnabled(PluginType.SENSITIVITY)) {
-                        //when the impact depends on a max time, sum them up as smaller carb sizes make them smaller
-//                            for (int ii = 0; ii < autosensData.activeCarbsList.size(); ++ii) {
-//                                AutosensData.CarbsInPast c = autosensData.activeCarbsList.get(ii);
-//                                totalMinCarbsImpact += c.min5minCarbImpact;
-//                            }
-//                        } else {
-                        //Oref sensitivity
-                        totalMinCarbsImpact = SP.getDouble(R.string.key_openapsama_min_5m_carbimpact, SMBDefaults.min_5m_carbimpact);
-//                        }
+                        autosensData.totalMinExpectedCarbsImpact = 0d;
+                        for (int ii = 0; ii < autosensData.activeCarbsList.size(); ++ii) {
+                            ActiveCarb c = autosensData.activeCarbsList.get(ii);
+                            autosensData.totalMinExpectedCarbsImpact += c.min5minCarbImpact;
+                        }
+*/
+                        /*
+                        if (SensitivityAAPSPlugin.getPlugin().isEnabled(PluginType.SENSITIVITY) || SensitivityWeightedAveragePlugin.getPlugin().isEnabled(PluginType.SENSITIVITY)) {
+                        } else {
+                            //Oref sensitivity
+                            totalMinCarbsImpact = SP.getDouble(R.string.key_openapsama_min_5m_carbimpact, SMBDefaults.min_5m_carbimpact);
+                        }
+                        double ci = Math.max(deviation, totalMinCarbsImpact);
+                        */
+
+                        // Carbs can never makes us negative, so negative devations are not relevant
+                        double ci = Math.max(0d, deviation);
+                        if (ci < 0) { //autosensData.totalMinExpectedCarbsImpact
+                            autosensData.failoverToMinAbsorbtionRate = true;
+                        }
+
+                        // TODO: remove this
+                        //ci = Math.max(autosensData.totalMinExpectedCarbsImpact, ci);
 
                         // figure out how many carbs that represents
-                        // but always assume at least 3mg/dL/5m (default) absorption per active treatment
-                        double ci = Math.max(deviation, totalMinCarbsImpact);
-                        if (ci != deviation)
-                            autosensData.failoverToMinAbsorbtionRate = true;
                         autosensData.absorbed = ci * profile.getIc(bgTime) / sens;
+                        autosensData.discarded = 0; //Math.max(0,autosensData.totalMinExpectedCarbsImpact - ci) * profile.getIc(bgTime) / sens;
                         // and add that to the running total carbsAbsorbed
-                        autosensData.cob = Math.max(previous.cob - autosensData.absorbed, 0d);
+                        autosensData.cob = 0 ;
+                        for (int ii = 0; ii < autosensData.activeCarbsList.size(); ++ii) {
+                            ActiveCarb c = autosensData.activeCarbsList.get(ii);
+                            autosensData.cob += c.getCarbsRemaining();
+                        }
+//                        autosensData.cob = Math.max(previous.cob - (autosensData.absorbed+autosensData.discarded), 0d);
                         autosensData.mealCarbs = previous.mealCarbs;
                         autosensData.substractAbosorbedCarbs();
-                        autosensData.usedMinCarbsImpact = totalMinCarbsImpact;
+
+                        // Only needed for the most recent hour of data (speeds up AAPS startup)
+                        if (bgTime > System.currentTimeMillis() - 1000*60*60*3) {
+                            autosensData.calculateDeviationsForErrors();
+                        }
+
+                        autosensData.usedMinCarbsImpact = 0d; // TODO: ???
                         autosensData.absorbing = previous.absorbing;
                         autosensData.mealStartCounter = previous.mealStartCounter;
                         autosensData.type = previous.type;
                         autosensData.uam = previous.uam;
                     }
+
+                    /* Heart rate delta ideas:
+
+                    (30 min exercise)
+                    moderate exercise = drop 4.4(+-1.2) mmol/L drop (0 to 40% VO2max) (0 to 60% HR max)
+                    high exercise = drop 2.9(+-0.8) mmol/L drop (40 to 80%? VO2max) (60% to 90% HR max)
+                    very high = increase - underfined amount (80 to 100% VO2max) (90 to 100% HR max) continues for 2 hours, but recovery time 14 to 20 hours after causes low
+                    https://www.ncbi.nlm.nih.gov/pubmed/15920041
+                    https://care.diabetesjournals.org/content/28/6/1289.abstract
+
+                    https://examinedexistence.com/whats-the-relationship-between-vo2max-and-heart-rate
+
+                    https://www.ncsf.org/pdf/ceu/relationship_between_percent_hr_max_and_percent_vo2_max.pdf
+                    lactate (acid?) level
+
+                    60% VO2max = 75 max heart rate
+
+                    estimated max heart rate = 217 - (0.85 * age) = 180 for hilary
+
+                    140bpm = 60% VO2max
+
+                    VO2max = 15 * (max / rest) = 35
+
+                    115/77
+                     */
+
 
                     autosensData.removeOldCarbs(bgTime);
                     autosensData.cob += autosensData.carbsFromBolus;
@@ -288,6 +371,48 @@ public class IobCobOref1Thread extends Thread {
                     autosensData.slopeFromMaxDeviation = slopeFromMaxDeviation;
                     autosensData.slopeFromMinDeviation = slopeFromMinDeviation;
 
+/*
+                    // Generate deviation predications for predicationSize*5 minutes
+                    int predicationSize = 12;
+                    if (autosensData.activeCarbsList.size() > 0) {
+                        predicationSize = 12;
+                    }
+
+                    //if (bgTime == 1570806420000l) {
+                        autosensData.generatePredicatedCarbs(predicationSize);
+                    //}
+
+
+                    //
+                    // Get and evaluate old predictions
+                    long evalStartTime = bgTime - ((predicationSize+1) * 5 * 60 * 1000);
+                    AutosensData toEval = autosensDataTable.get(evalStartTime);
+                    if (toEval != null && toEval.predictedDeviations.size() > 0) {
+                        StringBuilder deviationErrors = new StringBuilder();
+                        if (toEval.activeCarbsList.size() > 0) {
+                            predicationSize = 12;
+                        }
+                        boolean abort = false;
+                        double predicationScore = 0;
+                        for (int j = 0; abort == false && j < toEval.predictedDeviations.size(); j++) {
+                            AutosensData old = autosensDataTable.get(bgTime - ((predicationSize-j) * 5 * 60 * 1000));
+                            if (old == null || old.mealCarbs != toEval.mealCarbs) {
+                                abort = true;
+                            } else {
+                                double predicatedDeviation = toEval.predictedDeviations.get(j);
+                                double actualDeviation = old.deviation;
+//                                predicationScore += Math.pow(predicatedDeviation-actualDeviation, 2);
+                                predicationScore += predicatedDeviation-actualDeviation;
+                                deviationErrors.append(String.format("%.2f", predicatedDeviation-actualDeviation));
+                                deviationErrors.append(String.format("[%.2f %.2f]", predicatedDeviation, actualDeviation));
+                                deviationErrors.append(" ");
+                            }
+                        }
+                        if (!abort) {
+                            log.debug("Deviation Predication Error @ " + evalStartTime + " " + new Date(evalStartTime).toLocaleString() + " " +toEval.activeCarbsList.size()+ " = " + String.format("%.2f", (predicationScore / predicationSize))+" ("+deviationErrors.toString()+")");
+                        }
+                    }
+                    */
 
                     // If mealCOB is zero but all deviations since hitting COB=0 are positive, exclude from autosens
                     if (autosensData.cob > 0 || autosensData.absorbing || autosensData.mealCarbs > 0) {
@@ -381,8 +506,12 @@ public class IobCobOref1Thread extends Thread {
                     if (L.isEnabled(L.AUTOSENS))
                         log.debug("Sensitivity result: " + sensitivity.toString());
                     autosensData.autosensResult = sensitivity;
-                    if (L.isEnabled(L.AUTOSENS))
-                        log.debug(autosensData.toString());
+//                    if (L.isEnabled(L.AUTOSENS))
+                    log.debug(autosensData.toString());
+                    for (int ii = 0; ii < autosensData.activeCarbsList.size(); ++ii) {
+                        ActiveCarb c = autosensData.activeCarbsList.get(ii);
+                        log.debug(c.toString());
+                    }
                 }
             }
             new Thread(() -> {

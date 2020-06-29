@@ -48,6 +48,9 @@ public class APSResult {
     public double smb = 0d; // super micro bolus in units
     public long deliverAt = 0;
 
+    public int carbsReq = 0;
+    public int carbsReqWithin = 0;
+
     public Constraint<Double> inputConstraints;
 
     public Constraint<Double> rateConstraint;
@@ -84,6 +87,10 @@ public class APSResult {
         return this;
     }
 
+    public String getCarbsRequiredText() {
+        return String.format(MainApp.gs(R.string.carbsreq), carbsReq, carbsReqWithin);
+    }
+
     @Override
     public String toString() {
         final PumpInterface pump = ConfigBuilderPlugin.getPlugin().getActivePump();
@@ -104,14 +111,25 @@ public class APSResult {
                         MainApp.gs(R.string.duration) + ": " + DecimalFormatter.to2Decimal(duration) + " min\n";
 
             // smb
-            if (smb != 0)
+            if (smb != 0) {
                 ret += ("SMB: " + DecimalFormatter.toPumpSupportedBolus(smb) + " U\n");
+            }
+
+            if (isCarbsRequired()) {
+                ret += getCarbsRequiredText()+"\n";
+            }
 
             // reason
-            ret += MainApp.gs(R.string.reason) + ": " + reason;
-            return ret;
-        } else
-            return MainApp.gs(R.string.nochangerequested);
+//            ret += MainApp.gs(R.string.reason) + ": " + reason;
+
+            return ret.trim();
+        }
+
+        if (isCarbsRequired()) {
+            return getCarbsRequiredText();
+        }
+
+        return MainApp.gs(R.string.nochangerequested);
     }
 
     public Spanned toSpanned() {
@@ -133,14 +151,24 @@ public class APSResult {
                         "<b>" + MainApp.gs(R.string.duration) + "</b>: " + DecimalFormatter.to2Decimal(duration) + " min<br>";
 
             // smb
-            if (smb != 0)
+            if (smb != 0) {
                 ret += ("<b>" + "SMB" + "</b>: " + DecimalFormatter.toPumpSupportedBolus(smb) + " U<br>");
+            }
+
+            if (isCarbsRequired()) {
+                ret += getCarbsRequiredText()+"<br>";
+            }
 
             // reason
             ret += "<b>" + MainApp.gs(R.string.reason) + "</b>: " + reason.replace("<", "&lt;").replace(">", "&gt;");
             return Html.fromHtml(ret);
-        } else
-            return Html.fromHtml(MainApp.gs(R.string.nochangerequested));
+        }
+
+        if (isCarbsRequired()) {
+            return Html.fromHtml(getCarbsRequiredText());
+        }
+
+        return Html.fromHtml(MainApp.gs(R.string.nochangerequested));
     }
 
     public APSResult() {
@@ -172,6 +200,8 @@ public class APSResult {
         newResult.smbConstraint = smbConstraint;
         newResult.percent = percent;
         newResult.usePercent = usePercent;
+        newResult.carbsReq = carbsReq;
+        newResult.carbsReqWithin = carbsReqWithin;
     }
 
 
@@ -187,6 +217,27 @@ public class APSResult {
             log.error("Unhandled exception", e);
         }
         return json;
+    }
+
+    public double[] getPredictedBGValues() {
+        double [] array = null;
+        try {
+            if (json != null && json.has("predBGs")) {
+                JSONObject predBGs = json.getJSONObject("predBGs");
+                if (predBGs.has("UAM")) {
+
+                    JSONArray predBG = predBGs.getJSONArray("UAM");
+                    array = new double[predBG.length()];
+                    for (int i = 0; i < predBG.length(); i++) {
+                        array[i] = predBG.getDouble(i);
+                    }
+                }
+            }
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return array;
     }
 
     public List<BgReading> getPredictions() {
@@ -252,6 +303,23 @@ public class APSResult {
         return array;
     }
 
+    public double[] getDeviationPredictions() {
+        double [] array = null;
+        try {
+            if (json != null && json.has("predCIs")) {
+                JSONArray predCIs = json.getJSONArray("predCIs");
+                array = new double[predCIs.length()];
+                for (int i = 0; i < predCIs.length(); i++) {
+                    array[i] = predCIs.getDouble(i);
+                }
+            }
+        }
+        catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return array;
+    }
+
     public long getLatestPredictionsTime() {
         long latest = 0;
         try {
@@ -286,17 +354,25 @@ public class APSResult {
         return latest;
     }
 
+    public boolean isCarbsRequired() {
+        return carbsReq > 0;
+    }
+
     public boolean isChangeRequested() {
         Constraint<Boolean> closedLoopEnabled = MainApp.getConstraintChecker().isClosedLoopAllowed();
         // closed loop mode: handle change at driver level
         if (closedLoopEnabled.value()) {
             if (L.isEnabled(L.APS))
                 log.debug("DEFAULT: Closed mode");
-            return tempBasalRequested || bolusRequested;
+            return tempBasalRequested || bolusRequested || isCarbsRequired();
+        }
+
+        if (bolusRequested || isCarbsRequired()) {
+            return true;
         }
 
         // open loop mode: try to limit request
-        if (!tempBasalRequested && !bolusRequested) {
+        if (!tempBasalRequested) {
             if (L.isEnabled(L.APS))
                 log.debug("FALSE: No request");
             return false;

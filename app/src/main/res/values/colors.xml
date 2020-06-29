@@ -78,6 +78,7 @@
     <color name="deviationgreen">#7200FF00</color>
     <color name="deviationred">#72FF0000</color>
     <color name="deviationblack">#72000000</color>
+    <color name="deviationpredication">#72eeeeee</color>
 
     <color name="ribbonDefault">#5a595b</color>
     <color name="ribbonWarning">#f4d700</color>
