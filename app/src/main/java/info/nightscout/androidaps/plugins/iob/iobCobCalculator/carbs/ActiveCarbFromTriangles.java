@@ -19,6 +19,7 @@ import info.nightscout.androidaps.data.Profile;
 import info.nightscout.androidaps.db.CareportalEvent;
 import info.nightscout.androidaps.interfaces.PluginType;
 import info.nightscout.androidaps.logging.L;
+import info.nightscout.androidaps.plugins.aps.openAPSSMB.SMBDefaults;
 import info.nightscout.androidaps.plugins.configBuilder.ProfileFunctions;
 import info.nightscout.androidaps.plugins.general.nsclient.NSUpload;
 import info.nightscout.androidaps.plugins.sensitivity.SensitivityAAPSPlugin;
@@ -42,6 +43,7 @@ public class ActiveCarbFromTriangles implements ActiveCarb {
     String label;
 
     double maxAbsorptionHours = Constants.DEFAULT_MAX_ABSORPTION_TIME;
+    private double min5minCarbImpact = SMBDefaults.min_5m_carbimpact;
 
     SortedMap<Integer, Double> carbAbsorptionHistory = new TreeMap<>();
 
@@ -72,17 +74,23 @@ public class ActiveCarbFromTriangles implements ActiveCarb {
         // First tick minutes is always zero
         carbAbsorptionHistory.put(0, 0d);
 
+        // Backwards compatibility
         if (SensitivityAAPSPlugin.getPlugin().isEnabled(PluginType.SENSITIVITY) || SensitivityWeightedAveragePlugin.getPlugin().isEnabled(PluginType.SENSITIVITY)) {
             maxAbsorptionHours = SP.getDouble(R.string.key_absorption_maxtime, Constants.DEFAULT_MAX_ABSORPTION_TIME);
             Profile profile = ProfileFunctions.getInstance().getProfile(t.date);
             double sens = profile.getIsfMgdl(t.date);
             double ic = profile.getIc(t.date);
-            //min5minCarbImpact = t.carbs / (maxAbsorptionHours * 60 / 5) * sens / ic;
-            //if (L.isEnabled(L.AUTOSENS))
-            //   log.debug("Min 5m carbs impact for " + carbs + "g @" + new Date(t.date).toLocaleString() + " for " + maxAbsorptionHours + "h calculated to " + min5minCarbImpact + " ISF: " + sens + " IC: " + ic);
+            min5minCarbImpact = t.carbs / (maxAbsorptionHours * 60 / 5) * sens / ic;
+            if (L.isEnabled(L.AUTOSENS))
+               log.debug("Min 5m carbs impact for " + carbs + "g @" + new Date(t.date).toLocaleString() + " for " + maxAbsorptionHours + "h calculated to " + min5minCarbImpact + " ISF: " + sens + " IC: " + ic);
         } else {
-            //min5minCarbImpact = SP.getDouble(R.string.key_openapsama_min_5m_carbimpact, SMBDefaults.min_5m_carbimpact);
+            min5minCarbImpact = SP.getDouble(R.string.key_openapsama_min_5m_carbimpact, SMBDefaults.min_5m_carbimpact);
         }
+    }
+
+    @Override
+    public double get5minImpact() {
+        return min5minCarbImpact;
     }
 
     ActiveCarbFromTriangles(ActiveCarbFromTriangles other) {
@@ -242,23 +250,23 @@ public class ActiveCarbFromTriangles implements ActiveCarb {
 
         double feedbackPercentage = SP.getDouble(R.string.key_carbs_feedback_percentage, 0d);
 
-        return relevantError * predictionHistorySize * (feedbackPercentage / 100); // * (predictionHistorySize / 2)
+        return relevantError * predictionHistorySize * (feedbackPercentage / 100);
     }
 
     @Override
     public List<Double> getPredicatedCarbs(int numberOfDataPoints) {
 
-        //double carbPredictionError = carbsPredictionErrorFromHistory();
-        double carbPredictionError = 0;
+        // How good where the last x predictions? If they were low bias next prediction up, if high bias down
+        // Very mild effect
+        // Experimental
+        double carbPredictionError = carbsPredictionErrorFromHistory();
 
-        // Only generate a triangle covering the last 'x' minutes
+        // Only generate a triangle covering the last 'x' minutes of carbs absorbsion
         // this is to reduce the tendency to over-predict for long lasting carbs
         final int maxCarbsMinutes = 60;
 
         prediction = new ArrayList<>();
 
-        // Assume we are currently at a peak
-        double carbsSoFar = carbs - (remaining + discarded);
         double carbsLeftOver = remaining;
 
         if (carbsLeftOver <= 0) {
@@ -290,12 +298,15 @@ public class ActiveCarbFromTriangles implements ActiveCarb {
                 }
             }
 
+            // Yes, carbPredictionError can cause carbs to exceed remaining carbs
+            // Works like UAM and helps to smooth transition between carbs model and UAM
             double relevantCarbs = Math.min(carbsSince, carbsLeftOver) + carbPredictionError;
             log.debug("(carbsSince = " + carbsSince + ", carbsLeftOver = " + carbsLeftOver + " ) + carbPredictionError = " + carbPredictionError);
 
             if (lastCarbs <= 0d) {
                 durationTicks = 0;
             } else {
+                // Assume we are currently at a peak - create a triangle to zero
                 durationTicks = (long) Math.floor(relevantCarbs * 2 / lastCarbs);
             }
 
@@ -317,13 +328,13 @@ public class ActiveCarbFromTriangles implements ActiveCarb {
         double tickReminaingPeak = ticksRemaining / 2;
         double carbsLeftOverPeakCarbs = Math.max(0, carbsLeftOver / tickReminaingPeak);
 
+        // In original oref0 leftover carbs are assumed to be a triangle starting now and peaking halfway to maxAbsorptionHours
+        // but this can be an over prediction - move the start point back. 1 == left over carbs start at deviation peak end, 0 start immediately
+
         // Use the leftover triangle earlier for big meals, not at all for less than 10 (hypo)
-        // leftOverCarbsPeakOffsetRatio == 0, no offset (triangle starts now)
-        // leftOverCarbsPeakOffsetRatio == 1, full offset (triangle starts after carbs triangle finishes)
         double leftOverCarbsPeakOffsetRatio = 1 - ((carbs - 10) / 60);
         leftOverCarbsPeakOffsetRatio = Math.min(1, Math.max(0, leftOverCarbsPeakOffsetRatio));
         log.debug("leftOverCarbsPeakOffsetRatio = "+leftOverCarbsPeakOffsetRatio);
-
         for(int tick = 0; tick < numberOfDataPoints; ++tick) {
 
             double carbsFromDeviation = 0;
